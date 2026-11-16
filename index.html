@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Petualangan Belajar Interaktif</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SweetAlert2 (Pengganti Alert) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+        body { font-family: 'Nunito', sans-serif; background-color: #f0fdf4; color: #1f2937; overflow-x: hidden; }
+        .view-section { display: none; animation: fadeIn 0.5s ease-in-out; }
+        .view-section.active { display: block; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        
+        .mascot-bounce { animation: bounce-slow 3s infinite; }
+        
+        /* Game Canvas Styles */
+        #gameCanvas { background-color: #87CEEB; display: block; margin: 0 auto; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); width: 100%; max-width: 800px; height: 400px; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #e2e8f0; }
+        ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #2563eb; }
+
+        .btn-game { transition: all 0.2s; }
+        .btn-game:active { transform: scale(0.95); }
+    </style>
+</head>
+<body class="bg-blue-50 min-h-screen relative">
+
+    <!-- OVERLAY LOADING -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col justify-center items-center hidden">
+        <i class="fas fa-spinner fa-spin text-5xl text-blue-500 mb-4"></i>
+        <p class="text-xl font-bold text-gray-700 animate-pulse">Menyimpan ke Awan...</p>
+    </div>
+
+    <!-- 1. LOGIN VIEW -->
+    <section id="login-view" class="view-section active min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-400 to-purple-500">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center relative overflow-hidden">
+            <div class="absolute -top-10 -right-10 text-yellow-300 opacity-50"><i class="fas fa-star text-9xl"></i></div>
+            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=belajar" alt="Mascot" class="w-32 h-32 mx-auto mascot-bounce mb-4 bg-blue-100 rounded-full p-2 border-4 border-white shadow-lg relative z-10">
+            <h1 class="text-3xl font-black text-blue-600 mb-2 relative z-10">PETUALANGAN BELAJAR!</h1>
+            <p class="text-gray-500 font-bold mb-6">Ayo belajar dan bermain bersama!</p>
+            
+            <div class="space-y-4 relative z-10">
+                <div>
+                    <input type="text" id="inputNama" placeholder="Masukkan nama lengkap kamu..." class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-200 transition-all font-bold text-lg text-center" autocomplete="off">
+                </div>
+                <div>
+                    <select id="inputKelas" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-200 transition-all font-bold text-lg text-center appearance-none bg-white cursor-pointer">
+                        <option value="" disabled selected>-- Pilih Kelas --</option>
+                        <option value="Kelas 1">Kelas 1</option>
+                        <option value="Kelas 2">Kelas 2</option>
+                        <option value="Kelas 3">Kelas 3</option>
+                        <option value="Kelas 4">Kelas 4</option>
+                        <option value="Kelas 5">Kelas 5</option>
+                        <option value="Kelas 6">Kelas 6</option>
+                    </select>
+                </div>
+                <button onclick="login()" class="w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-black text-xl py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all">
+                    MULAI PETUALANGAN! <i class="fas fa-rocket ml-2"></i>
+                </button>
+            </div>
+            
+            <button onclick="showView('teacher-view')" class="mt-6 text-sm text-gray-400 hover:text-gray-600 underline">Akses Guru</button>
+        </div>
+    </section>
+
+    <!-- NAVIGATION BAR -->
+    <nav id="mainNav" class="hidden bg-white shadow-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center space-x-2">
+                    <img src="https://api.dicebear.com/7.x/bottts/svg?seed=belajar" class="h-10 w-10 bg-blue-100 rounded-full p-1">
+                    <span class="font-black text-xl text-blue-600">EduQuest</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="hidden sm:flex space-x-4">
+                        <button onclick="showView('dashboard-view')" class="text-gray-600 hover:text-blue-600 font-bold"><i class="fas fa-home mr-1"></i> Beranda</button>
+                        <button onclick="showView('materi-list-view')" class="text-gray-600 hover:text-blue-600 font-bold"><i class="fas fa-book mr-1"></i> Materi</button>
+                        <button onclick="showView('games-list-view')" class="text-gray-600 hover:text-blue-600 font-bold"><i class="fas fa-gamepad mr-1"></i> Arena</button>
+                        <button onclick="showView('report-view')" class="text-gray-600 hover:text-blue-600 font-bold"><i class="fas fa-trophy mr-1"></i> Rapor</button>
+                    </div>
+                    <div class="border-l-2 pl-4 flex items-center space-x-2">
+                        <div class="text-right">
+                            <div id="navUserName" class="text-sm font-black text-gray-800">Nama</div>
+                            <div id="navUserClass" class="text-xs font-bold text-blue-500">Kelas</div>
+                        </div>
+                        <button onclick="logout()" class="bg-red-100 text-red-600 p-2 rounded-lg hover:bg-red-200" title="Ganti Siswa"><i class="fas fa-sign-out-alt"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main id="mainContent" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 hidden">
+        
+        <!-- 2. DASHBOARD VIEW -->
+        <section id="dashboard-view" class="view-section">
+            <div class="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-3xl p-8 text-white shadow-xl mb-8 flex flex-col md:flex-row items-center justify-between">
+                <div class="mb-6 md:mb-0">
+                    <h2 class="text-3xl font-black mb-2">Halo, <span id="dashName" class="text-yellow-300">Siswa</span>! 👋</h2>
+                    <p class="text-blue-100 text-lg">Selamat datang di Kelas <span id="dashClass" class="font-bold">6</span>. Siap berpetualang hari ini?</p>
+                </div>
+                <div class="flex gap-4">
+                    <div class="bg-white/20 p-4 rounded-xl text-center backdrop-blur-sm">
+                        <div class="text-3xl font-black text-yellow-300"><i class="fas fa-star"></i> <span id="dashStars">0</span></div>
+                        <div class="text-sm font-bold mt-1">Bintang</div>
+                    </div>
+                    <div class="bg-white/20 p-4 rounded-xl text-center backdrop-blur-sm">
+                        <div class="text-3xl font-black text-green-300"><i class="fas fa-check-circle"></i> <span id="dashProgress">0</span>%</div>
+                        <div class="text-sm font-bold mt-1">Progress</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="text-2xl font-black text-gray-800 mb-6 border-b-4 border-yellow-400 inline-block pb-1">Misi Kamu Hari Ini</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div onclick="showView('materi-list-view')" class="bg-white rounded-2xl p-6 shadow-lg border-b-4 border-blue-500 cursor-pointer hover:-translate-y-2 transition-all group">
+                    <div class="w-16 h-16 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform"><i class="fas fa-book-open"></i></div>
+                    <h4 class="text-xl font-black text-gray-800 mb-2">1. Pelajari Materi</h4>
+                    <p class="text-gray-500">Baca materi seru dan tonton video pembelajarannya!</p>
+                </div>
+                <div onclick="showView('materi-list-view')" class="bg-white rounded-2xl p-6 shadow-lg border-b-4 border-green-500 cursor-pointer hover:-translate-y-2 transition-all group">
+                    <div class="w-16 h-16 bg-green-100 text-green-500 rounded-full flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform"><i class="fas fa-tasks"></i></div>
+                    <h4 class="text-xl font-black text-gray-800 mb-2">2. Kerjakan Kuis</h4>
+                    <p class="text-gray-500">Uji pengetahuanmu dan kumpulkan nilai sempurna (100).</p>
+                </div>
+                <div onclick="showView('games-list-view')" class="bg-white rounded-2xl p-6 shadow-lg border-b-4 border-purple-500 cursor-pointer hover:-translate-y-2 transition-all group">
+                    <div class="w-16 h-16 bg-purple-100 text-purple-500 rounded-full flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform"><i class="fas fa-gamepad"></i></div>
+                    <h4 class="text-xl font-black text-gray-800 mb-2">3. Mainkan Game</h4>
+                    <p class="text-gray-500">Gunakan pengetahuanmu untuk menang di Arena Permainan!</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. MATERI LIST VIEW -->
+        <section id="materi-list-view" class="view-section">
+            <h2 class="text-3xl font-black text-gray-800 mb-2"><i class="fas fa-map text-blue-500 mr-2"></i> Peta Materi IPAS Kelas 6</h2>
+            <p class="text-gray-600 mb-8 font-bold">Bab 1: Bagaimana Tubuh Kita Bergerak?</p>
+            <div id="materiContainer" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Diisi oleh JS -->
+            </div>
+        </section>
+
+        <!-- 4. MATERI DETAIL VIEW -->
+        <section id="materi-detail-view" class="view-section">
+            <button onclick="showView('materi-list-view')" class="mb-4 text-blue-600 font-bold hover:text-blue-800"><i class="fas fa-arrow-left mr-1"></i> Kembali ke Daftar Materi</button>
+            <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+                <div class="bg-blue-600 p-6 text-white">
+                    <h2 id="mDetailTitle" class="text-3xl font-black">Judul Materi</h2>
+                    <p id="mDetailTujuan" class="text-blue-100 mt-2 font-semibold">Tujuan Pembelajaran...</p>
+                </div>
+                <div class="p-8">
+                    <img id="mDetailImage" src="" alt="Ilustrasi Materi" class="w-full max-h-64 object-cover rounded-xl mb-6 shadow-md border-4 border-gray-100">
+                    
+                    <div class="prose max-w-none text-gray-700 text-lg leading-relaxed mb-8" id="mDetailContent">
+                        <!-- Konten materi dari JS -->
+                    </div>
+
+                    <div class="bg-gray-50 rounded-2xl p-6 mb-8 border-2 border-gray-200">
+                        <h3 class="text-xl font-black text-gray-800 mb-4"><i class="fab fa-youtube text-red-500 mr-2"></i> Video Pembelajaran</h3>
+                        <div class="aspect-w-16 aspect-h-9 rounded-xl overflow-hidden shadow-inner">
+                            <iframe id="mDetailVideo" class="w-full h-96" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center bg-blue-50 p-6 rounded-2xl border-2 border-blue-100">
+                        <div>
+                            <h3 class="text-xl font-black text-blue-800 mb-1">Sudah Paham?</h3>
+                            <p class="text-blue-600">Ayo uji pengetahuanmu dengan 10 pertanyaan seru!</p>
+                        </div>
+                        <button id="btnStartQuiz" class="bg-gradient-to-r from-green-400 to-green-600 text-white font-black px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
+                            MULAI KUIS <i class="fas fa-play ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. QUIZ VIEW -->
+        <section id="quiz-view" class="view-section">
+            <div class="max-w-3xl mx-auto bg-white rounded-3xl shadow-xl p-8 border-t-8 border-blue-500 relative">
+                <div class="flex justify-between items-center mb-6">
+                    <span class="bg-blue-100 text-blue-800 text-sm font-black px-4 py-1 rounded-full border border-blue-300">Soal <span id="quizCurrentNum">1</span>/10</span>
+                    <span class="text-gray-500 font-bold"><i class="fas fa-clock text-yellow-500"></i> <span id="quizTimer">00:00</span></span>
+                </div>
+                
+                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-8">
+                    <div id="quizProgressBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 10%"></div>
+                </div>
+
+                <h3 id="quizQuestionText" class="text-2xl font-black text-gray-800 mb-8 text-center leading-snug">Pertanyaan...</h3>
+                
+                <div id="quizOptionsContainer" class="space-y-4">
+                    <!-- Opsi dari JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. GAMES LIST VIEW -->
+        <section id="games-list-view" class="view-section">
+            <h2 class="text-3xl font-black text-gray-800 mb-2"><i class="fas fa-gamepad text-purple-500 mr-2"></i> Arena Permainan</h2>
+            <p class="text-gray-600 mb-8 font-bold">Mainkan game sambil menguji ingatanmu. Semakin pintar, semakin jago!</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Game 1 -->
+                <div class="bg-white rounded-2xl overflow-hidden shadow-lg border-2 border-gray-100 hover:border-purple-400 transition-all">
+                    <div class="bg-gradient-to-r from-red-500 to-orange-500 h-32 flex justify-center items-center">
+                        <i class="fas fa-car-side text-6xl text-white"></i>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-black text-gray-800 mb-2">Balap Mobil Pintar</h3>
+                        <p class="text-gray-600 text-sm mb-4">Jawab cepat agar mobilmu melaju paling depan! Hati-hati kalau salah.</p>
+                        <button onclick="startGame(1)" class="w-full bg-purple-600 text-white font-bold py-2 rounded-lg hover:bg-purple-700 btn-game"><i class="fas fa-play mr-2"></i> MAIN SEKARANG</button>
+                    </div>
+                </div>
+                <!-- Game 2 -->
+                <div class="bg-white rounded-2xl overflow-hidden shadow-lg border-2 border-gray-100 hover:border-green-400 transition-all">
+                    <div class="bg-gradient-to-r from-green-500 to-teal-500 h-32 flex justify-center items-center">
+                        <i class="fas fa-sort-alpha-down text-6xl text-white"></i>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-black text-gray-800 mb-2">Susun Kata Gerak</h3>
+                        <p class="text-gray-600 text-sm mb-4">Susun huruf acak menjadi istilah penting pada sistem gerak manusia.</p>
+                        <button onclick="startGame(2)" class="w-full bg-green-600 text-white font-bold py-2 rounded-lg hover:bg-green-700 btn-game"><i class="fas fa-play mr-2"></i> MAIN SEKARANG</button>
+                    </div>
+                </div>
+                <!-- Game 3 -->
+                <div class="bg-white rounded-2xl overflow-hidden shadow-lg border-2 border-gray-100 hover:border-blue-400 transition-all">
+                    <div class="bg-gradient-to-r from-blue-500 to-cyan-500 h-32 flex justify-center items-center">
+                        <i class="fas fa-puzzle-piece text-6xl text-white"></i>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-black text-gray-800 mb-2">Cocokkan Pasangan</h3>
+                        <p class="text-gray-600 text-sm mb-4">Temukan pasangan yang tepat antara nama tulang/otot dan fungsinya.</p>
+                        <button onclick="startGame(3)" class="w-full bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 btn-game"><i class="fas fa-play mr-2"></i> MAIN SEKARANG</button>
+                    </div>
+                </div>
+                <!-- Mockup Games Lainnya -->
+                 <div class="bg-gray-100 rounded-2xl overflow-hidden border-2 border-dashed border-gray-300 opacity-70">
+                    <div class="h-32 flex justify-center items-center text-gray-400"><i class="fas fa-bullseye text-5xl"></i></div>
+                    <div class="p-6 text-center"><h3 class="font-bold text-gray-500 mb-2">Tembak Jawaban</h3><span class="text-xs bg-gray-200 px-2 py-1 rounded">Segera Hadir</span></div>
+                </div>
+                <div class="bg-gray-100 rounded-2xl overflow-hidden border-2 border-dashed border-gray-300 opacity-70">
+                    <div class="h-32 flex justify-center items-center text-gray-400"><i class="fas fa-map-signs text-5xl"></i></div>
+                    <div class="p-6 text-center"><h3 class="font-bold text-gray-500 mb-2">Labirin Pintar</h3><span class="text-xs bg-gray-200 px-2 py-1 rounded">Segera Hadir</span></div>
+                </div>
+                <div class="bg-gray-100 rounded-2xl overflow-hidden border-2 border-dashed border-gray-300 opacity-70">
+                    <div class="h-32 flex justify-center items-center text-gray-400"><i class="fas fa-gem text-5xl"></i></div>
+                    <div class="p-6 text-center"><h3 class="font-bold text-gray-500 mb-2">Harta Karun</h3><span class="text-xs bg-gray-200 px-2 py-1 rounded">Segera Hadir</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. GAME PLAY VIEW -->
+        <section id="game-play-view" class="view-section">
+            <div class="flex justify-between mb-4">
+                <button onclick="endGameEarly()" class="text-red-600 font-bold bg-white px-4 py-2 rounded-lg shadow"><i class="fas fa-times mr-2"></i> Keluar Game</button>
+                <div class="bg-white px-4 py-2 rounded-lg shadow font-bold text-blue-600">Skor: <span id="gameScoreDisplay">0</span></div>
+            </div>
+            
+            <!-- Game 1: Balap Mobil -->
+            <div id="game1Container" class="hidden">
+                <canvas id="gameCanvas"></canvas>
+                <div id="game1QuizOverlay" class="hidden mt-4 bg-white rounded-xl shadow p-6">
+                    <h3 id="g1Question" class="text-xl font-bold mb-4 text-center">Pertanyaan</h3>
+                    <div id="g1Options" class="grid grid-cols-2 gap-4"></div>
+                </div>
+            </div>
+
+            <!-- Game 2: Susun Kata -->
+            <div id="game2Container" class="hidden max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-8 text-center border-t-8 border-green-500">
+                <h3 class="text-2xl font-black text-gray-800 mb-2">Susun Kata</h3>
+                <p id="g2Clue" class="text-gray-600 italic mb-6">Petunjuk: ...</p>
+                <div id="g2Jumbled" class="text-4xl font-black tracking-widest text-blue-600 mb-8 bg-blue-50 p-4 rounded-xl border border-blue-200 uppercase"></div>
+                <input type="text" id="g2Answer" placeholder="Ketik jawabanmu di sini..." class="w-full text-center text-2xl font-bold p-3 border-4 border-gray-200 rounded-xl uppercase focus:border-green-500 mb-4" autocomplete="off">
+                <button onclick="checkGame2Answer()" class="w-full bg-green-500 text-white font-black py-3 rounded-xl hover:bg-green-600 text-xl shadow">CEK JAWABAN!</button>
+            </div>
+        </section>
+
+        <!-- 8. REPORT VIEW -->
+        <section id="report-view" class="view-section">
+            <h2 class="text-3xl font-black text-gray-800 mb-6"><i class="fas fa-trophy text-yellow-500 mr-2"></i> Hasil Belajarmu</h2>
+            <div class="bg-white rounded-3xl shadow-lg overflow-hidden border border-gray-100">
+                <div class="bg-gradient-to-r from-blue-600 to-blue-800 p-6 flex justify-between items-center text-white">
+                    <div>
+                        <h3 class="text-2xl font-black" id="repName">Nama Siswa</h3>
+                        <p class="font-bold text-blue-200" id="repClass">Kelas</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-3xl font-black text-yellow-300"><i class="fas fa-star"></i> <span id="repStars">0</span></div>
+                        <p class="text-sm">Total Bintang</p>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <h4 class="font-black text-gray-800 border-b pb-2 mb-4">Riwayat Kuis</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-100 text-gray-600 text-sm">
+                                    <th class="p-3 rounded-tl-lg">Materi</th>
+                                    <th class="p-3">Waktu</th>
+                                    <th class="p-3 text-center">Nilai</th>
+                                    <th class="p-3 rounded-tr-lg text-center">Predikat</th>
+                                </tr>
+                            </thead>
+                            <tbody id="repQuizBody">
+                                <!-- Diisi JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 9. TEACHER VIEW -->
+        <section id="teacher-view" class="view-section">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-black text-gray-800"><i class="fas fa-chalkboard-teacher text-blue-500 mr-2"></i> Dashboard Guru</h2>
+                <button onclick="showView('login-view')" class="text-gray-500 hover:text-gray-800 font-bold bg-white px-4 py-2 rounded shadow"><i class="fas fa-times mr-1"></i> Tutup</button>
+            </div>
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded shadow-sm text-sm text-yellow-800">
+                <strong>Catatan Keamanan:</strong> Karena aplikasi menggunakan sistem login nama tanpa password untuk memudahkan siswa SD, data ini ditujukan untuk pemantauan cepat. Untuk akses tersentralisasi, buka tautan Google Sheets secara langsung.
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow">
+                <h3 class="font-bold mb-4">Tautan Google Sheets Database:</h3>
+                <a href="#" class="text-blue-500 hover:underline flex items-center bg-gray-50 p-4 border rounded"><i class="fas fa-external-link-alt mr-3 text-xl"></i> Buka Database Sheets Utama</a>
+                <p class="mt-4 text-sm text-gray-500">Semua riwayat (Materi, Kuis, Game) dari seluruh siswa tercatat secara real-time melalui Google Apps Script.</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // --- 1. DATA MATERI & KUIS ---
+        const MATERI_DATA = [
+            {
+                id: 1,
+                title: "Rangka Manusia",
+                tujuan: "Memahami bagian-bagian rangka dan fungsinya sebagai alat gerak pasif.",
+                image: "https://placehold.co/800x400/4F46E5/FFFFFF?text=Rangka+Manusia",
+                video: "https://www.youtube.com/embed/3aA3_WwE4zQ", // Contoh embed
+                content: `
+                    <p>Tubuh kita dapat berdiri tegak karena memiliki <strong>rangka</strong>. Rangka adalah susunan tulang-tulang yang saling bersambungan dan membentuk tubuh kita. Rangka berfungsi sebagai alat gerak pasif karena rangka tidak dapat bergerak tanpa adanya otot.</p>
+                    <h4 class="font-bold text-xl mt-4 mb-2">Fungsi Rangka:</h4>
+                    <ul class="list-disc pl-5 mb-4">
+                        <li>Memberi bentuk tubuh.</li>
+                        <li>Menegakkan dan menopang tubuh.</li>
+                        <li>Melindungi organ-organ penting (seperti jantung, paru-paru, dan otak).</li>
+                        <li>Tempat melekatnya otot.</li>
+                        <li>Tempat pembentukan sel darah merah.</li>
+                    </ul>
+                    <h4 class="font-bold text-xl mt-4 mb-2">Bagian Utama Rangka:</h4>
+                    <p>Rangka manusia dibagi menjadi tiga kelompok utama:</p>
+                    <ol class="list-decimal pl-5">
+                        <li><strong>Rangka Kepala (Tengkorak):</strong> Melindungi otak dan membentuk wajah.</li>
+                        <li><strong>Rangka Badan:</strong> Melindungi organ dalam seperti jantung dan paru-paru (tulang dada, tulang rusuk, tulang belakang).</li>
+                        <li><strong>Rangka Anggota Gerak:</strong> Terdiri dari anggota gerak atas (tangan) dan anggota gerak bawah (kaki).</li>
+                    </ol>
+                `
+            },
+            {
+                id: 2,
+                title: "Sendi dalam Tubuh Kita",
+                tujuan: "Mengenal berbagai jenis sendi dan arah geraknya.",
+                image: "https://placehold.co/800x400/10B981/FFFFFF?text=Sendi+Manusia",
+                video: "https://www.youtube.com/embed/zOqIov1dC0c", // Contoh embed
+                content: `
+                    <p>Tulang yang satu dengan tulang yang lain dihubungkan oleh <strong>sendi</strong>. Tanpa sendi, tubuh kita akan kaku dan tidak bisa digerakkan seperti robot mati!</p>
+                    <h4 class="font-bold text-xl mt-4 mb-2">Macam-Macam Sendi Berdasarkan Arah Geraknya:</h4>
+                    <ul class="list-disc pl-5">
+                        <li><strong>Sendi Engsel:</strong> Hanya dapat digerakkan ke satu arah. Contoh: sendi pada siku dan lutut.</li>
+                        <li><strong>Sendi Peluru:</strong> Dapat digerakkan ke segala arah. Contoh: sendi antara gelang bahu dan tulang lengan atas, serta tulang paha dengan panggul.</li>
+                        <li><strong>Sendi Putar:</strong> Gerakannya memutar. Contoh: sendi antara tulang leher dan tulang tengkorak.</li>
+                        <li><strong>Sendi Pelana:</strong> Dapat digerakkan ke dua arah (samping dan depan). Contoh: sendi pada pangkal ibu jari.</li>
+                        <li><strong>Sendi Geser:</strong> Gerakannya hanya menggeser sedikit. Contoh: sendi pada pergelangan tangan dan kaki.</li>
+                    </ul>
+                `
+            },
+            {
+                id: 3,
+                title: "Otot sebagai Alat Gerak Aktif",
+                tujuan: "Mengetahui fungsi otot dan jenis-jenisnya.",
+                image: "https://placehold.co/800x400/EF4444/FFFFFF?text=Otot+Manusia",
+                video: "https://www.youtube.com/embed/zOqIov1dC0c",
+                content: `
+                    <p><strong>Otot</strong> adalah jaringan di dalam tubuh manusia yang dapat mengerut (kontraksi) dan mengendur (relaksasi). Otot merupakan alat gerak aktif yang menggerakkan tulang.</p>
+                    <h4 class="font-bold text-xl mt-4 mb-2">Jenis-jenis Otot:</h4>
+                    <ol class="list-decimal pl-5">
+                        <li><strong>Otot Polos:</strong> Bekerja di luar kesadaran kita, terdapat pada organ dalam seperti usus dan lambung.</li>
+                        <li><strong>Otot Lurik (Otot Rangka):</strong> Bekerja di bawah kesadaran kita (bisa kita atur), menempel pada rangka/tulang.</li>
+                        <li><strong>Otot Jantung:</strong> Bentuknya seperti otot lurik tetapi bekerja di luar kesadaran (terus memompa darah tanpa henti).</li>
+                    </ol>
+                `
+            }
+        ];
+
+        // Bank soal untuk masing-masing materi (ID materi) - Harus 10 soal per materi sesuai request
+        const QUIZ_DATA = {
+            1: [
+                { q: "Apa fungsi utama rangka bagi tubuh manusia?", o: ["Memompa darah", "Alat gerak pasif dan penopang", "Alat gerak aktif", "Mencerna makanan"], a: 1 },
+                { q: "Tulang apa yang berfungsi melindungi otak?", o: ["Tulang rusuk", "Tulang panggul", "Tengkorak", "Tulang belakang"], a: 2 },
+                { q: "Organ penting yang dilindungi oleh tulang rusuk adalah...", o: ["Jantung dan paru-paru", "Otak dan mata", "Lambung dan usus", "Ginjal dan hati"], a: 0 },
+                { q: "Tulang paha, betis, dan kering termasuk ke dalam rangka...", o: ["Tengkorak", "Badan", "Anggota gerak atas", "Anggota gerak bawah"], a: 3 },
+                { q: "Manakah yang bukan merupakan fungsi rangka?", o: ["Membentuk tubuh", "Tempat melekatnya otot", "Menghasilkan sel darah", "Mencerna makanan"], a: 3 },
+                { q: "Bagian rangka yang menyusun tangan disebut...", o: ["Anggota gerak bawah", "Anggota gerak atas", "Rangka badan", "Tengkorak"], a: 1 },
+                { q: "Tulang belakang termasuk dalam kelompok rangka...", o: ["Kepala", "Badan", "Anggota gerak", "Panggul"], a: 1 },
+                { q: "Mengapa rangka disebut alat gerak pasif?", o: ["Karena tidak bisa bergerak tanpa otot", "Karena selalu bergerak", "Karena mengendalikan otot", "Karena menghasilkan energi"], a: 0 },
+                { q: "Tempat pembentukan sel darah merah berada di...", o: ["Kulit", "Jantung", "Tulang/sumsum", "Otak"], a: 2 },
+                { q: "Berikut yang termasuk anggota gerak atas adalah...", o: ["Tulang paha", "Tulang lengan atas", "Tulang kering", "Tulang betis"], a: 1 },
+            ],
+            2: [
+                { q: "Hubungan antar tulang yang memungkinkan pergerakan disebut...", o: ["Otot", "Sendi", "Darah", "Saraf"], a: 1 },
+                { q: "Sendi yang terdapat pada lutut dan siku adalah sendi...", o: ["Peluru", "Putar", "Engsel", "Pelana"], a: 2 },
+                { q: "Sendi peluru memungkinkan gerakan ke arah...", o: ["Satu arah", "Dua arah", "Memutar", "Segala arah"], a: 3 },
+                { q: "Sendi antara tulang leher dan tulang tengkorak disebut...", o: ["Sendi geser", "Sendi putar", "Sendi engsel", "Sendi pelana"], a: 1 },
+                { q: "Contoh letak sendi pelana adalah pada...", o: ["Lutut", "Bahu", "Pangkal ibu jari", "Pergelangan kaki"], a: 2 },
+                { q: "Gerakan menggeser sedikit terjadi pada sendi...", o: ["Geser", "Putar", "Engsel", "Peluru"], a: 0 },
+                { q: "Agar sendi tidak sakit saat bergerak, di dalamnya terdapat...", o: ["Cairan sinovial/pelumas", "Udara", "Darah beku", "Otot polos"], a: 0 },
+                { q: "Sendi engsel memiliki gerakan seperti...", o: ["Roda berputar", "Pintu yang dibuka tutup", "Kertas yang digeser", "Joystick game"], a: 1 },
+                { q: "Sendi antara gelang panggul dan tulang paha adalah...", o: ["Peluru", "Engsel", "Putar", "Pelana"], a: 0 },
+                { q: "Jika tidak ada sendi, maka tubuh kita akan...", o: ["Lebih lentur", "Kaku dan sulit bergerak", "Lebih kuat", "Cepat tinggi"], a: 1 },
+            ],
+            3: [
+                { q: "Alat gerak aktif pada tubuh manusia adalah...", o: ["Tulang", "Sendi", "Otot", "Saraf"], a: 2 },
+                { q: "Otot yang menempel pada rangka tubuh disebut otot...", o: ["Polos", "Jantung", "Lurik", "Saraf"], a: 2 },
+                { q: "Otot yang bekerja memompa darah terus menerus tanpa lelah adalah...", o: ["Otot lurik", "Otot jantung", "Otot polos", "Otot betis"], a: 1 },
+                { q: "Otot polos terdapat pada organ...", o: ["Paha", "Lengan", "Usus dan lambung", "Jantung"], a: 2 },
+                { q: "Sifat kerja otot lurik adalah...", o: ["Tidak sadar", "Di bawah kesadaran/kemauan kita", "Terus menerus tanpa henti", "Sangat lambat"], a: 1 },
+                { q: "Saat mengangkat beban, otot lengan (bisep) akan...", o: ["Relaksasi/memanjang", "Kontraksi/memendek dan mengeras", "Menghilang", "Menjadi tulang"], a: 1 },
+                { q: "Kebalikan dari kontraksi otot adalah...", o: ["Relaksasi", "Fleksibel", "Iritasi", "Oksidasi"], a: 0 },
+                { q: "Bentuk otot jantung mirip dengan otot...", o: ["Polos", "Lurik", "Rangka", "Semua benar"], a: 1 },
+                { q: "Otot yang bekerja di luar kesadaran (otonom) adalah...", o: ["Otot lurik", "Otot polos dan jantung", "Otot rangka", "Hanya otot jantung"], a: 1 },
+                { q: "Mengapa otot disebut alat gerak aktif?", o: ["Karena bisa memendek dan memanjang untuk menggerakkan tulang", "Karena diam saja", "Karena bentuknya merah", "Karena menyerap makanan"], a: 0 },
+            ]
+        };
+
+        // --- 2. STATE MANAGEMENT ---
+        let appState = {
+            user: { name: "", class: "" },
+            stats: { stars: 0, progress: 0, completedMaterials: [], quizHistory: [] },
+            currentMateri: null,
+            currentQuiz: null,
+            currentGame: null
+        };
+        const API_URL = "https://script.google.com/macros/s/AKfycbwEtTQpdP4mKD-xo90_7Yg3ufkEaAh3tcIzYyOhpkIT-Y0i3XT7B0ifSMVS3DCtOzHQ/exec";
+
+        // --- 3. SYSTEM LOGIC (INIT & NAVIGATION) ---
+        window.onload = () => {
+            loadIdentity();
+            if (appState.user.name) {
+                initDashboard();
+                showView('dashboard-view');
+                document.getElementById('mainNav').classList.remove('hidden');
+            }
+        };
+
+        function showView(viewId) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            window.scrollTo({top: 0, behavior: 'smooth'});
+            
+            // Re-render specific views
+            if (viewId === 'materi-list-view') renderMateriList();
+            if (viewId === 'report-view') renderReport();
+        }
+
+        function loadIdentity() {
+            const saved = localStorage.getItem('eduQuestUser');
+            if (saved) {
+                appState = JSON.parse(saved);
+                document.getElementById('navUserName').innerText = appState.user.name;
+                document.getElementById('navUserClass').innerText = appState.user.class;
+            }
+        }
+
+        function saveIdentity() {
+            localStorage.setItem('eduQuestUser', JSON.stringify(appState));
+            updateHeader();
+        }
+
+        function updateHeader() {
+            document.getElementById('navUserName').innerText = appState.user.name;
+            document.getElementById('navUserClass').innerText = appState.user.class;
+            document.getElementById('dashName').innerText = appState.user.name;
+            document.getElementById('dashClass').innerText = appState.user.class;
+            document.getElementById('dashStars').innerText = appState.stats.stars;
+            let prog = (appState.stats.completedMaterials.length / MATERI_DATA.length) * 100;
+            document.getElementById('dashProgress').innerText = Math.round(prog);
+        }
+
+        async function login() {
+            const name = document.getElementById('inputNama').value.trim();
+            const cls = document.getElementById('inputKelas').value;
+            
+            if (!name || !cls) {
+                Swal.fire('Oops!', 'Masukkan nama dan pilih kelasmu dulu ya!', 'warning');
+                return;
+            }
+            
+            appState.user = { name, class: cls };
+            // Initialize basic stats if new
+            if (!appState.stats) appState.stats = { stars: 0, progress: 0, completedMaterials: [], quizHistory: [] };
+            
+            saveIdentity();
+            initDashboard();
+            document.getElementById('mainNav').classList.remove('hidden');
+            showView('dashboard-view');
+            
+            // Send login log to Apps Script silently
+            await sendToSheet('LOGIN', { nama: name, kelas: cls, waktu: new Date().toISOString() });
+        }
+
+        function logout() {
+            Swal.fire({
+                title: 'Ganti Siswa?',
+                text: "Kamu akan kembali ke halaman awal.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, Keluar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    localStorage.removeItem('eduQuestUser');
+                    appState.user = { name: "", class: "" };
+                    document.getElementById('mainNav').classList.add('hidden');
+                    document.getElementById('inputNama').value = "";
+                    document.getElementById('inputKelas').value = "";
+                    showView('login-view');
+                }
+            });
+        }
+
+        function initDashboard() {
+            updateHeader();
+            document.getElementById('mainContent').classList.remove('hidden');
+        }
+
+        // --- 4. DATA INTEGRATION (GOOGLE APPS SCRIPT) ---
+        async function sendToSheet(actionType, dataPayload) {
+            try {
+                // Tampilkan loading kecil jika bukan silent
+                const id_aktivitas = "ACT_" + new Date().getTime();
+                const payload = {
+                    action: actionType,
+                    id_aktivitas: id_aktivitas,
+                    nama: appState.user.name,
+                    kelas: appState.user.class,
+                    data: dataPayload
+                };
+
+                console.log("Sending to Google Sheets:", payload);
+                // POST Request via fetch
+                fetch(API_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // Penting untuk bypass CORS policy Google Script sederhana
+                    cache: 'no-cache',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }).then(res => console.log("Sent securely to background"));
+                
+            } catch (error) {
+                console.error("Gagal mengirim data ke Sheets", error);
+            }
+        }
+
+        // --- 5. MATERI LOGIC ---
+        function renderMateriList() {
+            const container = document.getElementById('materiContainer');
+            container.innerHTML = "";
+            MATERI_DATA.forEach((m, idx) => {
+                const isCompleted = appState.stats.completedMaterials.includes(m.id);
+                const html = `
+                    <div class="bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-100 flex flex-col sm:flex-row transition-transform hover:-translate-y-1">
+                        <img src="${m.image}" class="w-full sm:w-1/3 h-48 sm:h-auto object-cover border-r border-gray-100">
+                        <div class="p-6 flex flex-col justify-between w-full">
+                            <div>
+                                <div class="flex justify-between items-start mb-2">
+                                    <h3 class="text-xl font-black text-blue-700">${idx+1}. ${m.title}</h3>
+                                    ${isCompleted ? '<span class="bg-green-100 text-green-600 text-xs font-bold px-2 py-1 rounded"><i class="fas fa-check"></i> Selesai</span>' : ''}
+                                </div>
+                                <p class="text-gray-500 text-sm mb-4 line-clamp-2">${m.tujuan}</p>
+                            </div>
+                            <button onclick="openMateri(${m.id})" class="w-full bg-blue-100 text-blue-600 font-bold py-2 rounded-lg hover:bg-blue-200 transition-colors">
+                                Pelajari <i class="fas fa-arrow-right ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
+        }
+
+        function openMateri(id) {
+            const m = MATERI_DATA.find(x => x.id === id);
+            if(!m) return;
+            appState.currentMateri = id;
+            document.getElementById('mDetailTitle').innerText = m.title;
+            document.getElementById('mDetailTujuan').innerText = m.tujuan;
+            document.getElementById('mDetailImage').src = m.image;
+            document.getElementById('mDetailContent').innerHTML = m.content;
+            document.getElementById('mDetailVideo').src = m.video;
+            
+            // Mark as read in stat
+            if (!appState.stats.completedMaterials.includes(id)) {
+                appState.stats.completedMaterials.push(id);
+                saveIdentity();
+                sendToSheet('BACA_MATERI', { id_materi: id, judul: m.title });
+            }
+
+            document.getElementById('btnStartQuiz').onclick = () => startQuiz(id);
+            showView('materi-detail-view');
+        }
+
+        // --- 6. QUIZ LOGIC ---
+        let quizState = { qIndex: 0, score: 0, questions: [], timer: null, timeLeft: 0 };
+        function startQuiz(materiId) {
+            const questions = QUIZ_DATA[materiId];
+            if (!questions) {
+                Swal.fire('Oops', 'Kuis untuk materi ini belum tersedia!', 'info');
+                return;
+            }
+            quizState = {
+                materiId: materiId,
+                qIndex: 0,
+                score: 0,
+                questions: [...questions].sort(() => Math.random() - 0.5), // Acak ringan
+                startTime: Date.now()
+            };
+            showView('quiz-view');
+            renderQuizQuestion();
+        }
+
+        function renderQuizQuestion() {
+            const qData = quizState.questions[quizState.qIndex];
+            document.getElementById('quizCurrentNum').innerText = quizState.qIndex + 1;
+            document.getElementById('quizProgressBar').style.width = `${((quizState.qIndex) / 10) * 100}%`;
+            document.getElementById('quizQuestionText').innerText = qData.q;
+            
+            const optsContainer = document.getElementById('quizOptionsContainer');
+            optsContainer.innerHTML = "";
+            
+            qData.o.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 rounded-xl border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 font-semibold text-gray-700 transition-all focus:outline-none focus:ring focus:ring-blue-200";
+                btn.innerHTML = `<span class="inline-block w-8 h-8 text-center bg-gray-200 rounded-full mr-3">${String.fromCharCode(65+idx)}</span> ${opt}`;
+                btn.onclick = () => handleQuizAnswer(idx, qData.a);
+                optsContainer.appendChild(btn);
+            });
+        }
+
+        function handleQuizAnswer(selectedIdx, correctIdx) {
+            const isCorrect = (selectedIdx === correctIdx);
+            const optsContainer = document.getElementById('quizOptionsContainer');
+            const btns = optsContainer.querySelectorAll('button');
+            
+            btns.forEach(btn => btn.disabled = true);
+            
+            if (isCorrect) {
+                quizState.score += 10;
+                btns[selectedIdx].classList.replace('border-gray-200', 'border-green-500');
+                btns[selectedIdx].classList.replace('hover:bg-blue-50', 'bg-green-100');
+                btns[selectedIdx].classList.add('text-green-800');
+            } else {
+                btns[selectedIdx].classList.replace('border-gray-200', 'border-red-500');
+                btns[selectedIdx].classList.replace('hover:bg-blue-50', 'bg-red-100');
+                btns[correctIdx].classList.replace('border-gray-200', 'border-green-500');
+                btns[correctIdx].classList.add('bg-green-100');
+            }
+
+            setTimeout(() => {
+                quizState.qIndex++;
+                if (quizState.qIndex < 10 && quizState.qIndex < quizState.questions.length) {
+                    renderQuizQuestion();
+                } else {
+                    finishQuiz();
+                }
+            }, 1000);
+        }
+
+        function finishQuiz() {
+            const timeTaken = Math.floor((Date.now() - quizState.startTime) / 1000); // dalam detik
+            let predikat = "";
+            if (quizState.score >= 90) predikat = "Luar Biasa";
+            else if (quizState.score >= 80) predikat = "Sangat Baik";
+            else if (quizState.score >= 70) predikat = "Baik";
+            else if (quizState.score >= 60) predikat = "Cukup";
+            else predikat = "Ayo Belajar Lagi";
+
+            const earnedStars = Math.floor(quizState.score / 20);
+            appState.stats.stars += earnedStars;
+            
+            const historyData = {
+                id_materi: quizState.materiId,
+                judul: MATERI_DATA.find(m=>m.id === quizState.materiId).title,
+                skor: quizState.score,
+                predikat: predikat,
+                tanggal: new Date().toLocaleDateString(),
+                durasi: timeTaken
+            };
+            appState.stats.quizHistory.push(historyData);
+            saveIdentity();
+            
+            // Send to Google Sheets
+            sendToSheet('NILAI_KUIS', historyData);
+
+            Swal.fire({
+                title: 'Kuis Selesai!',
+                html: `
+                    <div class="text-left text-lg">
+                        <p>Nilai Kamu: <b class="text-3xl text-blue-600">${quizState.score}</b>/100</p>
+                        <p>Predikat: <b class="text-yellow-600">${predikat}</b></p>
+                        <p>Bintang didapat: <b>+${earnedStars} <i class="fas fa-star text-yellow-400"></i></b></p>
+                    </div>
+                `,
+                icon: quizState.score > 70 ? 'success' : 'info',
+                confirmButtonText: 'Kembali ke Materi'
+            }).then(() => {
+                showView('materi-detail-view');
+            });
+        }
+
+        // --- 7. GAMES LOGIC ---
+        function startGame(gameId) {
+            appState.currentGame = gameId;
+            showView('game-play-view');
+            document.getElementById('game1Container').classList.add('hidden');
+            document.getElementById('game2Container').classList.add('hidden');
+            
+            if (gameId === 1) initGame1(); // Balap Mobil
+            if (gameId === 2) initGame2(); // Susun Kata
+            if (gameId === 3) {
+                // Dummy implementasi untuk representasi game ke-3
+                Swal.fire('Tunggu dulu!', 'Game Cocokkan Pasangan sedang disiapkan untuk update berikutnya!', 'info');
+                showView('games-list-view');
+            }
+        }
+
+        function endGameEarly() {
+            if(window.game1Loop) cancelAnimationFrame(window.game1Loop);
+            showView('games-list-view');
+        }
+
+        // --- GAME 1: BALAP MOBIL PINTAR (CANVAS) ---
+        let g1State = { active: false, score: 0, carX: 50, speed: 2, bgOffset: 0, qIndex: 0, qs: [] };
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        function initGame1() {
+            canvas.width = 800; canvas.height = 400;
+            document.getElementById('game1Container').classList.remove('hidden');
+            document.getElementById('gameScoreDisplay').innerText = "0";
+            
+            // Siapkan soal acak dari materi 1 & 2
+            let combinedQs = [...QUIZ_DATA[1], ...QUIZ_DATA[2]].sort(() => Math.random() - 0.5).slice(0, 5); // 5 soal untuk balap
+            g1State = { active: true, score: 0, carX: 100, speed: 5, bgOffset: 0, qIndex: 0, qs: combinedQs, enemyX: 100 };
+            
+            document.getElementById('game1QuizOverlay').classList.add('hidden');
+            game1LoopFn();
+            triggerG1Question(); // Panggil pertanyaan pertama setelah 2 detik
+        }
+
+        function triggerG1Question() {
+            if(g1State.qIndex >= g1State.qs.length) {
+                setTimeout(finishGame1, 2000);
+                return;
+            }
+            setTimeout(() => {
+                g1State.active = false; // Pause animasi
+                const q = g1State.qs[g1State.qIndex];
+                document.getElementById('g1Question').innerText = q.q;
+                const optsDiv = document.getElementById('g1Options');
+                optsDiv.innerHTML = "";
+                q.o.forEach((opt, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = "bg-blue-100 hover:bg-blue-200 border-2 border-blue-400 p-3 rounded font-bold text-sm h-full";
+                    btn.innerText = opt;
+                    btn.onclick = () => answerG1(idx, q.a);
+                    optsDiv.appendChild(btn);
+                });
+                document.getElementById('game1QuizOverlay').classList.remove('hidden');
+            }, 3000); // Muncul setiap 3 detik animasi jalan
+        }
+
+        function answerG1(selected, correct) {
+            document.getElementById('game1QuizOverlay').classList.add('hidden');
+            if (selected === correct) {
+                g1State.score += 20;
+                g1State.carX += 100; // Maju
+                Swal.fire({toast: true, position: 'top-end', icon: 'success', title: 'Benar! Ngeeng!!', showConfirmButton: false, timer: 1500});
+            } else {
+                g1State.enemyX += 100; // Musuh maju
+                Swal.fire({toast: true, position: 'top-end', icon: 'error', title: 'Salah! Yahh...', showConfirmButton: false, timer: 1500});
+            }
+            document.getElementById('gameScoreDisplay').innerText = g1State.score;
+            g1State.qIndex++;
+            g1State.active = true;
+            triggerG1Question();
+        }
+
+        function game1LoopFn() {
+            if (appState.currentGame !== 1) return;
+            if (g1State.active) {
+                g1State.bgOffset -= g1State.speed;
+                if (g1State.bgOffset <= -800) g1State.bgOffset = 0;
+            }
+
+            // Draw Background (Road)
+            ctx.fillStyle = '#4ade80'; // Rumput
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#374151'; // Aspal
+            ctx.fillRect(0, 100, canvas.width, 200);
+            
+            // Garis jalan
+            ctx.fillStyle = '#fff';
+            for(let i=0; i<10; i++) {
+                ctx.fillRect(i * 100 + g1State.bgOffset, 195, 50, 10);
+                ctx.fillRect(i * 100 + 800 + g1State.bgOffset, 195, 50, 10);
+            }
+
+            // Draw Player Car (Red)
+            ctx.fillStyle = 'red';
+            ctx.fillRect(g1State.carX, 120, 80, 40);
+            ctx.fillStyle = 'black';
+            ctx.fillRect(g1State.carX+10, 110, 20, 10); ctx.fillRect(g1State.carX+50, 110, 20, 10); // Roda atas
+            ctx.fillRect(g1State.carX+10, 160, 20, 10); ctx.fillRect(g1State.carX+50, 160, 20, 10); // Roda bawah
+            
+            // Draw Enemy Car (Blue)
+            ctx.fillStyle = 'blue';
+            ctx.fillRect(g1State.enemyX, 230, 80, 40);
+            ctx.fillStyle = 'black';
+            ctx.fillRect(g1State.enemyX+10, 220, 20, 10); ctx.fillRect(g1State.enemyX+50, 220, 20, 10);
+            ctx.fillRect(g1State.enemyX+10, 270, 20, 10); ctx.fillRect(g1State.enemyX+50, 270, 20, 10);
+
+            // Garis Finis (jika soal habis)
+            if (g1State.qIndex >= g1State.qs.length) {
+                ctx.fillStyle = 'white';
+                ctx.fillRect(700 + g1State.bgOffset, 100, 20, 200);
+                ctx.fillStyle = 'black';
+                for(let k=0; k<10; k++) ctx.fillRect(700 + g1State.bgOffset, 100 + (k*20), 20, 10);
+            }
+
+            window.game1Loop = requestAnimationFrame(game1LoopFn);
+        }
+
+        function finishGame1() {
+            g1State.active = false;
+            cancelAnimationFrame(window.game1Loop);
+            let msg = g1State.carX > g1State.enemyX ? "Kamu Juara 1!" : "Kamu Kalah Cepat!";
+            let addedStars = Math.floor(g1State.score / 20);
+            appState.stats.stars += addedStars;
+            saveIdentity();
+            
+            sendToSheet('NILAI_GAME', { nama_game: "Balap Mobil", skor: g1State.score });
+            
+            Swal.fire({
+                title: 'Balapan Selesai!',
+                text: `${msg} Skor akhir: ${g1State.score}. Bintang +${addedStars}`,
+                icon: g1State.carX > g1State.enemyX ? 'success' : 'info',
+                confirmButtonText: 'Kembali ke Arena'
+            }).then(() => {
+                showView('games-list-view');
+            });
+        }
+
+        // --- GAME 2: SUSUN KATA ---
+        const g2Words = [
+            { word: "RANGKA", clue: "Kumpulan tulang penopang tubuh" },
+            { word: "SENDI", clue: "Penghubung antar tulang" },
+            { word: "ENGSEL", clue: "Jenis sendi di lutut" },
+            { word: "LURIK", clue: "Jenis otot yang menempel pada tulang" }
+        ];
+        let g2State = { index: 0, score: 0 };
+        
+        function initGame2() {
+            document.getElementById('game2Container').classList.remove('hidden');
+            g2State = { index: 0, score: 0 };
+            document.getElementById('gameScoreDisplay').innerText = "0";
+            loadG2Word();
+        }
+
+        function loadG2Word() {
+            if (g2State.index >= g2Words.length) {
+                finishGame2();
+                return;
+            }
+            const data = g2Words[g2State.index];
+            document.getElementById('g2Clue').innerText = `Petunjuk: ${data.clue}`;
+            document.getElementById('g2Answer').value = "";
+            // Acak kata
+            let arr = data.word.split('');
+            arr.sort(() => 0.5 - Math.random());
+            document.getElementById('g2Jumbled').innerText = arr.join(' ');
+        }
+
+        function checkGame2Answer() {
+            const ans = document.getElementById('g2Answer').value.toUpperCase().trim();
+            const correct = g2Words[g2State.index].word;
+            if (ans === correct) {
+                Swal.fire({toast: true, position: 'top-end', icon: 'success', title: 'Tepat Sekali!', showConfirmButton: false, timer: 1000});
+                g2State.score += 25;
+                document.getElementById('gameScoreDisplay').innerText = g2State.score;
+                g2State.index++;
+                setTimeout(loadG2Word, 1000);
+            } else {
+                Swal.fire({toast: true, position: 'top-end', icon: 'error', title: 'Coba Lagi!', showConfirmButton: false, timer: 1000});
+            }
+        }
+
+        function finishGame2() {
+            appState.stats.stars += 5; // Fixed reward
+            saveIdentity();
+            sendToSheet('NILAI_GAME', { nama_game: "Susun Kata", skor: g2State.score });
+            Swal.fire('Hebat!', `Kamu menyelesaikan game Susun Kata dengan skor ${g2State.score}!`, 'success').then(() => {
+                showView('games-list-view');
+            });
+        }
+
+
+        // --- 8. REPORT (HASIL BELAJAR) LOGIC ---
+        function renderReport() {
+            document.getElementById('repName').innerText = appState.user.name;
+            document.getElementById('repClass').innerText = appState.user.class;
+            document.getElementById('repStars').innerText = appState.stats.stars;
+            
+            const tbody = document.getElementById('repQuizBody');
+            tbody.innerHTML = "";
+            
+            if (appState.stats.quizHistory.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-500">Belum ada kuis yang dikerjakan.</td></tr>`;
+                return;
+            }
+
+            appState.stats.quizHistory.forEach(r => {
+                let badgeColor = r.skor >= 80 ? 'bg-green-100 text-green-700' : (r.skor >= 60 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700');
+                tbody.innerHTML += `
+                    <tr class="border-b border-gray-50">
+                        <td class="p-3 font-bold text-gray-700">${r.judul}</td>
+                        <td class="p-3 text-sm text-gray-500">${r.tanggal}</td>
+                        <td class="p-3 text-center font-black text-blue-600 text-lg">${r.skor}</td>
+                        <td class="p-3 text-center"><span class="px-2 py-1 rounded text-xs font-bold ${badgeColor}">${r.predikat}</span></td>
+                    </tr>
+                `;
+            });
+        }
+
+    </script>
+</body>
+</html>
