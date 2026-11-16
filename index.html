@@ -3,184 +3,229 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Petualangan Belajar Interaktif</title>
+    <title>Respira Adventure - Game Edukasi Pernapasan</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- SweetAlert2 (Pengganti Alert) -->
+    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
-        body { font-family: 'Nunito', sans-serif; background-color: #f0fdf4; color: #1f2937; overflow-x: hidden; }
+        body { font-family: 'Nunito', sans-serif; background-color: #0f172a; color: #f8fafc; overflow-x: hidden; }
+        
+        /* View Management */
         .view-section { display: none; animation: fadeIn 0.5s ease-in-out; }
         .view-section.active { display: block; }
         
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         
-        .mascot-bounce { animation: bounce-slow 3s infinite; }
-        
-        /* Game Canvas Styles */
-        #gameCanvas { background-color: #87CEEB; display: block; margin: 0 auto; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); width: 100%; max-width: 800px; height: 400px; }
-        
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #e2e8f0; }
-        ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #2563eb; }
+        /* Floating Bubbles (Oxygen) Background */
+        .bubble {
+            position: absolute; bottom: -20px; background: rgba(56, 189, 248, 0.4);
+            border-radius: 50%; animation: rise 5s infinite ease-in;
+        }
+        @keyframes rise {
+            0% { transform: translateY(0) scale(1); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateY(-100vh) scale(1.5); opacity: 0; }
+        }
 
-        .btn-game { transition: all 0.2s; }
-        .btn-game:active { transform: scale(0.95); }
+        /* Fullscreen Login Theme */
+        #login-view { background: linear-gradient(135deg, #0891b2, #4c1d95, #0f172a); background-size: 200% 200%; animation: gradFlow 10s ease infinite; }
+        @keyframes gradFlow { 0% {background-position: 0% 50%} 50% {background-position: 100% 50%} 100% {background-position: 0% 50%} }
+        
+        .mascot-float { animation: floating 3s ease-in-out infinite; }
+        @keyframes floating { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+
+        /* Game Canvas */
+        #gameCanvas { background-color: #1e293b; display: block; margin: 0 auto; border-radius: 12px; border: 4px solid #38bdf8; width: 100%; max-width: 800px; height: 400px; }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #0ea5e9; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #0284c7; }
+
+        .btn-hover-fx { transition: all 0.2s; }
+        .btn-hover-fx:active { transform: scale(0.95); }
     </style>
 </head>
-<body class="bg-blue-50 min-h-screen relative">
+<body class="min-h-screen relative text-slate-800">
 
-    <!-- OVERLAY LOADING -->
-    <div id="loadingOverlay" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col justify-center items-center hidden">
-        <i class="fas fa-spinner fa-spin text-5xl text-blue-500 mb-4"></i>
-        <p class="text-xl font-bold text-gray-700 animate-pulse">Menyimpan ke Awan...</p>
-    </div>
-
-    <!-- 1. LOGIN VIEW -->
-    <section id="login-view" class="view-section active min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-400 to-purple-500">
-        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center relative overflow-hidden">
-            <div class="absolute -top-10 -right-10 text-yellow-300 opacity-50"><i class="fas fa-star text-9xl"></i></div>
-            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=belajar" alt="Mascot" class="w-32 h-32 mx-auto mascot-bounce mb-4 bg-blue-100 rounded-full p-2 border-4 border-white shadow-lg relative z-10">
-            <h1 class="text-3xl font-black text-blue-600 mb-2 relative z-10">PETUALANGAN BELAJAR!</h1>
-            <p class="text-gray-500 font-bold mb-6">Ayo belajar dan bermain bersama!</p>
+    <!-- 1. FULLSCREEN LOGIN VIEW -->
+    <section id="login-view" class="view-section active fixed inset-0 z-50 flex items-center justify-center overflow-hidden">
+        <!-- Bubbles FX -->
+        <div id="bubbles-container" class="absolute inset-0 pointer-events-none"></div>
+        
+        <div class="relative z-10 bg-white/10 backdrop-blur-xl border border-white/20 p-10 rounded-3xl shadow-2xl max-w-lg w-full text-center text-white">
+            <div class="mascot-float mb-6">
+                <i class="fas fa-lungs text-8xl text-cyan-400 drop-shadow-[0_0_15px_rgba(34,211,238,0.8)]"></i>
+            </div>
+            <h1 class="text-4xl font-black mb-2 tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-purple-300">RESPIRA ADVENTURE</h1>
+            <p class="text-cyan-100 font-bold mb-8 italic">"Jelajahi Sistem Pernapasan, Taklukkan Tantangan, Jadilah Juara!"</p>
             
-            <div class="space-y-4 relative z-10">
+            <div class="space-y-5">
                 <div>
-                    <input type="text" id="inputNama" placeholder="Masukkan nama lengkap kamu..." class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-200 transition-all font-bold text-lg text-center" autocomplete="off">
+                    <input type="text" id="inputNama" placeholder="Masukkan nama penjelajah..." class="w-full px-5 py-4 rounded-2xl bg-white/20 border-2 border-cyan-400/50 text-white placeholder-cyan-200 focus:outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-400/30 text-center font-bold text-lg" autocomplete="off">
                 </div>
                 <div>
-                    <select id="inputKelas" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-200 transition-all font-bold text-lg text-center appearance-none bg-white cursor-pointer">
-                        <option value="" disabled selected>-- Pilih Kelas --</option>
-                        <option value="Kelas 1">Kelas 1</option>
-                        <option value="Kelas 2">Kelas 2</option>
-                        <option value="Kelas 3">Kelas 3</option>
-                        <option value="Kelas 4">Kelas 4</option>
-                        <option value="Kelas 5">Kelas 5</option>
-                        <option value="Kelas 6">Kelas 6</option>
+                    <select id="inputKelas" class="w-full px-5 py-4 rounded-2xl bg-white/20 border-2 border-cyan-400/50 text-white focus:outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-400/30 text-center font-bold text-lg appearance-none cursor-pointer">
+                        <option value="" disabled selected class="text-slate-800">-- Pilih Kelas --</option>
+                        <option value="Kelas 1" class="text-slate-800">Kelas 1</option>
+                        <option value="Kelas 2" class="text-slate-800">Kelas 2</option>
+                        <option value="Kelas 3" class="text-slate-800">Kelas 3</option>
+                        <option value="Kelas 4" class="text-slate-800">Kelas 4</option>
+                        <option value="Kelas 5" class="text-slate-800">Kelas 5</option>
+                        <option value="Kelas 6" class="text-slate-800">Kelas 6</option>
                     </select>
                 </div>
-                <button onclick="login()" class="w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-black text-xl py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all">
-                    MULAI PETUALANGAN! <i class="fas fa-rocket ml-2"></i>
+                <button onclick="login()" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-black text-2xl py-4 rounded-2xl shadow-[0_0_20px_rgba(6,182,212,0.5)] btn-hover-fx mt-4">
+                    MULAI PETUALANGAN <i class="fas fa-gamepad ml-2"></i>
                 </button>
             </div>
-            
-            <button onclick="showView('teacher-view')" class="mt-6 text-sm text-gray-400 hover:text-gray-600 underline">Akses Guru</button>
         </div>
     </section>
 
-    <!-- NAVIGATION BAR -->
-    <nav id="mainNav" class="hidden bg-white shadow-md sticky top-0 z-40">
+    <!-- NAVIGATION LOBBY (Hidden on Login) -->
+    <nav id="mainNav" class="hidden bg-slate-900 shadow-xl sticky top-0 z-40 border-b border-slate-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center space-x-2">
-                    <img src="https://api.dicebear.com/7.x/bottts/svg?seed=belajar" class="h-10 w-10 bg-blue-100 rounded-full p-1">
-                    <span class="font-black text-xl text-blue-600">EduQuest</span>
+            <div class="flex justify-between h-20">
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="showView('dashboard-view')">
+                    <i class="fas fa-lungs text-3xl text-cyan-400"></i>
+                    <span class="font-black text-2xl text-white tracking-wide">RESPIRA<span class="text-cyan-400">.ADV</span></span>
                 </div>
-                <div class="flex items-center space-x-4">
-                    <div class="hidden sm:flex space-x-4">
-                        <button onclick="showView('dashboard-view')" class="text-gray-600 hover:text-blue-600 font-bold"><i class="fas fa-home mr-1"></i> Beranda</button>
-                        <button onclick="showView('materi-list-view')" class="text-gray-600 hover:text-blue-600 font-bold"><i class="fas fa-book mr-1"></i> Materi</button>
-                        <button onclick="showView('games-list-view')" class="text-gray-600 hover:text-blue-600 font-bold"><i class="fas fa-gamepad mr-1"></i> Arena</button>
-                        <button onclick="showView('report-view')" class="text-gray-600 hover:text-blue-600 font-bold"><i class="fas fa-trophy mr-1"></i> Rapor</button>
+                <div class="flex items-center space-x-6">
+                    <!-- Stats Menu -->
+                    <div class="hidden md:flex space-x-6 items-center bg-slate-800 px-6 py-2 rounded-full border border-slate-700">
+                        <div class="text-center"><div class="text-yellow-400 font-black"><i class="fas fa-star"></i> <span id="navStars">0</span></div><div class="text-[10px] text-slate-400 uppercase">Bintang</div></div>
+                        <div class="text-center"><div class="text-purple-400 font-black"><i class="fas fa-bolt"></i> <span id="navXP">0</span></div><div class="text-[10px] text-slate-400 uppercase">XP</div></div>
+                        <div class="text-center"><div class="text-emerald-400 font-black">Lv.<span id="navLevel">1</span></div><div class="text-[10px] text-slate-400 uppercase">Level</div></div>
                     </div>
-                    <div class="border-l-2 pl-4 flex items-center space-x-2">
-                        <div class="text-right">
-                            <div id="navUserName" class="text-sm font-black text-gray-800">Nama</div>
-                            <div id="navUserClass" class="text-xs font-bold text-blue-500">Kelas</div>
+                    <!-- Player Info -->
+                    <div class="flex items-center space-x-3 pl-4 border-l border-slate-700 relative group">
+                        <div class="text-right hidden sm:block">
+                            <div id="navUserName" class="text-sm font-black text-white">PlayerName</div>
+                            <div id="navUserClass" class="text-xs font-bold text-cyan-400">Class</div>
                         </div>
-                        <button onclick="logout()" class="bg-red-100 text-red-600 p-2 rounded-lg hover:bg-red-200" title="Ganti Siswa"><i class="fas fa-sign-out-alt"></i></button>
+                        <div class="w-10 h-10 bg-gradient-to-tr from-cyan-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold border-2 border-slate-700 cursor-pointer" onclick="toggleUserMenu()">
+                            <i class="fas fa-user-astronaut"></i>
+                        </div>
+                        <!-- Dropdown -->
+                        <div id="userMenu" class="hidden absolute top-12 right-0 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2 w-40">
+                            <button onclick="logout()" class="w-full text-left px-4 py-2 text-red-400 hover:bg-slate-700 rounded-lg font-bold"><i class="fas fa-sign-out-alt mr-2"></i> Ganti Siswa</button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- MAIN CONTENT CONTAINER -->
-    <main id="mainContent" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 hidden">
+    <!-- MAIN APP CONTAINER -->
+    <main id="mainContent" class="hidden bg-slate-900 min-h-[calc(100vh-5rem)]">
         
-        <!-- 2. DASHBOARD VIEW -->
-        <section id="dashboard-view" class="view-section">
-            <div class="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-3xl p-8 text-white shadow-xl mb-8 flex flex-col md:flex-row items-center justify-between">
-                <div class="mb-6 md:mb-0">
-                    <h2 class="text-3xl font-black mb-2">Halo, <span id="dashName" class="text-yellow-300">Siswa</span>! 👋</h2>
-                    <p class="text-blue-100 text-lg">Selamat datang di Kelas <span id="dashClass" class="font-bold">6</span>. Siap berpetualang hari ini?</p>
+        <!-- 2. DASHBOARD / LOBBY VIEW -->
+        <section id="dashboard-view" class="view-section py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Hero Banner -->
+            <div class="bg-[url('https://placehold.co/1200x400/0f172a/0ea5e9?text=+')] bg-cover bg-center rounded-3xl p-10 text-white shadow-2xl border border-cyan-900/50 mb-10 relative overflow-hidden flex flex-col md:flex-row items-center justify-between">
+                <div class="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/80 to-transparent"></div>
+                <div class="relative z-10 w-full md:w-2/3">
+                    <span class="bg-cyan-500 text-slate-900 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider mb-4 inline-block">Misi Aktif</span>
+                    <h2 class="text-4xl md:text-5xl font-black mb-4 leading-tight">Halo, <span id="dashName" class="text-cyan-400">Penjelajah</span>! 🚀</h2>
+                    <p class="text-slate-300 text-lg md:text-xl font-medium mb-6">Misi kamu hari ini adalah mempelajari Rahasia Paru-Paru Manusia dan mengalahkan monster kuman di Arena!</p>
+                    <button onclick="showView('materi-list-view')" class="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-black px-8 py-3 rounded-xl shadow-[0_0_15px_rgba(6,182,212,0.4)] btn-hover-fx">
+                        MULAI MISI SEKARANG
+                    </button>
                 </div>
-                <div class="flex gap-4">
-                    <div class="bg-white/20 p-4 rounded-xl text-center backdrop-blur-sm">
-                        <div class="text-3xl font-black text-yellow-300"><i class="fas fa-star"></i> <span id="dashStars">0</span></div>
-                        <div class="text-sm font-bold mt-1">Bintang</div>
-                    </div>
-                    <div class="bg-white/20 p-4 rounded-xl text-center backdrop-blur-sm">
-                        <div class="text-3xl font-black text-green-300"><i class="fas fa-check-circle"></i> <span id="dashProgress">0</span>%</div>
-                        <div class="text-sm font-bold mt-1">Progress</div>
-                    </div>
+                <div class="relative z-10 hidden md:block w-48 h-48 mascot-float">
+                    <i class="fas fa-lungs-virus text-9xl text-purple-400 drop-shadow-2xl"></i>
                 </div>
             </div>
 
-            <h3 class="text-2xl font-black text-gray-800 mb-6 border-b-4 border-yellow-400 inline-block pb-1">Misi Kamu Hari Ini</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div onclick="showView('materi-list-view')" class="bg-white rounded-2xl p-6 shadow-lg border-b-4 border-blue-500 cursor-pointer hover:-translate-y-2 transition-all group">
-                    <div class="w-16 h-16 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform"><i class="fas fa-book-open"></i></div>
-                    <h4 class="text-xl font-black text-gray-800 mb-2">1. Pelajari Materi</h4>
-                    <p class="text-gray-500">Baca materi seru dan tonton video pembelajarannya!</p>
+            <!-- Game Cards Menu -->
+            <h3 class="text-2xl font-black text-white mb-6 border-l-4 border-cyan-400 pl-4">Pusat Komando</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Card 1 -->
+                <div onclick="showView('materi-list-view')" class="bg-slate-800 rounded-2xl p-6 border border-slate-700 hover:border-cyan-400 cursor-pointer btn-hover-fx group">
+                    <div class="w-14 h-14 bg-slate-700 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-cyan-500 transition-colors">
+                        <i class="fas fa-book-journal-whills text-2xl text-cyan-400 group-hover:text-slate-900"></i>
+                    </div>
+                    <h4 class="text-xl font-black text-white mb-2">Dunia Materi</h4>
+                    <p class="text-sm text-slate-400">Jelajahi 6 Level teori sistem pernapasan lengkap.</p>
                 </div>
-                <div onclick="showView('materi-list-view')" class="bg-white rounded-2xl p-6 shadow-lg border-b-4 border-green-500 cursor-pointer hover:-translate-y-2 transition-all group">
-                    <div class="w-16 h-16 bg-green-100 text-green-500 rounded-full flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform"><i class="fas fa-tasks"></i></div>
-                    <h4 class="text-xl font-black text-gray-800 mb-2">2. Kerjakan Kuis</h4>
-                    <p class="text-gray-500">Uji pengetahuanmu dan kumpulkan nilai sempurna (100).</p>
+                <!-- Card 2 -->
+                <div onclick="showView('games-list-view')" class="bg-slate-800 rounded-2xl p-6 border border-slate-700 hover:border-purple-400 cursor-pointer btn-hover-fx group">
+                    <div class="w-14 h-14 bg-slate-700 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-purple-500 transition-colors">
+                        <i class="fas fa-gamepad text-2xl text-purple-400 group-hover:text-slate-900"></i>
+                    </div>
+                    <h4 class="text-xl font-black text-white mb-2">Arena Game</h4>
+                    <p class="text-sm text-slate-400">Mainkan mini-games seru dan kumpulkan XP.</p>
                 </div>
-                <div onclick="showView('games-list-view')" class="bg-white rounded-2xl p-6 shadow-lg border-b-4 border-purple-500 cursor-pointer hover:-translate-y-2 transition-all group">
-                    <div class="w-16 h-16 bg-purple-100 text-purple-500 rounded-full flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform"><i class="fas fa-gamepad"></i></div>
-                    <h4 class="text-xl font-black text-gray-800 mb-2">3. Mainkan Game</h4>
-                    <p class="text-gray-500">Gunakan pengetahuanmu untuk menang di Arena Permainan!</p>
+                <!-- Card 3 -->
+                <div onclick="showView('report-view')" class="bg-slate-800 rounded-2xl p-6 border border-slate-700 hover:border-yellow-400 cursor-pointer btn-hover-fx group">
+                    <div class="w-14 h-14 bg-slate-700 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-yellow-400 transition-colors">
+                        <i class="fas fa-trophy text-2xl text-yellow-400 group-hover:text-slate-900"></i>
+                    </div>
+                    <h4 class="text-xl font-black text-white mb-2">Hasil Belajar</h4>
+                    <p class="text-sm text-slate-400">Lihat rapor, koleksi bintang, dan pencapaianmu.</p>
+                </div>
+                <!-- Card 4 -->
+                <div onclick="alert('Fitur Leaderboard segera hadir!')" class="bg-slate-800 rounded-2xl p-6 border border-slate-700 hover:border-emerald-400 cursor-pointer btn-hover-fx group">
+                    <div class="w-14 h-14 bg-slate-700 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-emerald-400 transition-colors">
+                        <i class="fas fa-medal text-2xl text-emerald-400 group-hover:text-slate-900"></i>
+                    </div>
+                    <h4 class="text-xl font-black text-white mb-2">Papan Skor</h4>
+                    <p class="text-sm text-slate-400">Bandingkan skormu dengan penjelajah lain.</p>
                 </div>
             </div>
         </section>
 
-        <!-- 3. MATERI LIST VIEW -->
-        <section id="materi-list-view" class="view-section">
-            <h2 class="text-3xl font-black text-gray-800 mb-2"><i class="fas fa-map text-blue-500 mr-2"></i> Peta Materi IPAS Kelas 6</h2>
-            <p class="text-gray-600 mb-8 font-bold">Bab 1: Bagaimana Tubuh Kita Bergerak?</p>
-            <div id="materiContainer" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Diisi oleh JS -->
+        <!-- 3. MATERI MAP (DUNIA MATERI) -->
+        <section id="materi-list-view" class="view-section py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h2 class="text-3xl font-black text-white"><i class="fas fa-map-location-dot text-cyan-400 mr-2"></i> Peta Petualangan</h2>
+                    <p class="text-slate-400">Bab: Sistem Pernapasan Manusia</p>
+                </div>
+                <button onclick="showView('dashboard-view')" class="bg-slate-800 text-white px-4 py-2 rounded-lg font-bold hover:bg-slate-700"><i class="fas fa-home"></i> Kembali</button>
+            </div>
+            
+            <div id="materiContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Generated via JS -->
             </div>
         </section>
 
         <!-- 4. MATERI DETAIL VIEW -->
-        <section id="materi-detail-view" class="view-section">
-            <button onclick="showView('materi-list-view')" class="mb-4 text-blue-600 font-bold hover:text-blue-800"><i class="fas fa-arrow-left mr-1"></i> Kembali ke Daftar Materi</button>
-            <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
-                <div class="bg-blue-600 p-6 text-white">
-                    <h2 id="mDetailTitle" class="text-3xl font-black">Judul Materi</h2>
-                    <p id="mDetailTujuan" class="text-blue-100 mt-2 font-semibold">Tujuan Pembelajaran...</p>
+        <section id="materi-detail-view" class="view-section py-8 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <button onclick="showView('materi-list-view')" class="mb-6 bg-slate-800 text-slate-300 font-bold py-2 px-4 rounded-xl hover:bg-slate-700 transition"><i class="fas fa-arrow-left mr-2"></i> Kembali ke Peta</button>
+            
+            <div class="bg-white rounded-3xl shadow-2xl overflow-hidden text-slate-800">
+                <div class="bg-gradient-to-r from-cyan-600 to-blue-700 p-8 text-white">
+                    <div class="uppercase tracking-widest text-cyan-200 font-bold text-sm mb-2" id="mDetailLevelBadge">LEVEL 1</div>
+                    <h2 id="mDetailTitle" class="text-3xl sm:text-4xl font-black leading-tight">Judul Materi</h2>
+                    <p id="mDetailTujuan" class="text-cyan-50 mt-3 font-medium bg-black/20 p-3 rounded-lg border-l-4 border-cyan-300">Tujuan Pembelajaran...</p>
                 </div>
-                <div class="p-8">
-                    <img id="mDetailImage" src="" alt="Ilustrasi Materi" class="w-full max-h-64 object-cover rounded-xl mb-6 shadow-md border-4 border-gray-100">
+                <div class="p-6 sm:p-10">
+                    <img id="mDetailImage" src="" alt="Ilustrasi Materi" class="w-full h-auto object-cover rounded-2xl mb-8 shadow-md border border-slate-200">
                     
-                    <div class="prose max-w-none text-gray-700 text-lg leading-relaxed mb-8" id="mDetailContent">
-                        <!-- Konten materi dari JS -->
+                    <div class="prose prose-lg max-w-none text-slate-700 leading-relaxed mb-10" id="mDetailContent">
+                        <!-- Konten HTML disisipkan via JS -->
                     </div>
 
-                    <div class="bg-gray-50 rounded-2xl p-6 mb-8 border-2 border-gray-200">
-                        <h3 class="text-xl font-black text-gray-800 mb-4"><i class="fab fa-youtube text-red-500 mr-2"></i> Video Pembelajaran</h3>
-                        <div class="aspect-w-16 aspect-h-9 rounded-xl overflow-hidden shadow-inner">
-                            <iframe id="mDetailVideo" class="w-full h-96" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    <div class="bg-slate-900 rounded-3xl p-6 sm:p-8 mb-10 shadow-lg text-white">
+                        <h3 class="text-2xl font-black mb-4"><i class="fab fa-youtube text-red-500 mr-2"></i> Transmisi Video Edukasi</h3>
+                        <div class="aspect-w-16 aspect-h-9 rounded-2xl overflow-hidden shadow-inner border border-slate-700">
+                            <iframe id="mDetailVideo" class="w-full h-[300px] sm:h-[450px]" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                         </div>
                     </div>
 
-                    <div class="flex justify-between items-center bg-blue-50 p-6 rounded-2xl border-2 border-blue-100">
-                        <div>
-                            <h3 class="text-xl font-black text-blue-800 mb-1">Sudah Paham?</h3>
-                            <p class="text-blue-600">Ayo uji pengetahuanmu dengan 10 pertanyaan seru!</p>
+                    <div class="flex flex-col sm:flex-row justify-between items-center bg-cyan-50 p-8 rounded-3xl border-2 border-cyan-200 gap-6">
+                        <div class="text-center sm:text-left">
+                            <h3 class="text-2xl font-black text-cyan-900 mb-2">Siap Melawan Kuman?</h3>
+                            <p class="text-cyan-700 font-medium">Uji pemahamanmu tentang materi ini di Kuis Tantangan (10 Soal). Dapatkan Bintang & XP!</p>
                         </div>
-                        <button id="btnStartQuiz" class="bg-gradient-to-r from-green-400 to-green-600 text-white font-black px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
+                        <button id="btnStartQuiz" class="w-full sm:w-auto bg-gradient-to-r from-emerald-400 to-emerald-600 text-white font-black px-8 py-4 rounded-2xl shadow-[0_5px_15px_rgba(16,185,129,0.4)] btn-hover-fx text-lg whitespace-nowrap">
                             MULAI KUIS <i class="fas fa-play ml-2"></i>
                         </button>
                     </div>
@@ -188,775 +233,875 @@
             </div>
         </section>
 
-        <!-- 5. QUIZ VIEW -->
-        <section id="quiz-view" class="view-section">
-            <div class="max-w-3xl mx-auto bg-white rounded-3xl shadow-xl p-8 border-t-8 border-blue-500 relative">
-                <div class="flex justify-between items-center mb-6">
-                    <span class="bg-blue-100 text-blue-800 text-sm font-black px-4 py-1 rounded-full border border-blue-300">Soal <span id="quizCurrentNum">1</span>/10</span>
-                    <span class="text-gray-500 font-bold"><i class="fas fa-clock text-yellow-500"></i> <span id="quizTimer">00:00</span></span>
+        <!-- 5. KUIS VIEW -->
+        <section id="quiz-view" class="view-section py-8 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-white rounded-3xl shadow-2xl p-8 sm:p-10 border-t-[10px] border-emerald-500 relative text-slate-800">
+                <div class="flex justify-between items-center mb-8 border-b pb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-emerald-100 text-emerald-800 text-lg font-black px-4 py-2 rounded-xl">Soal <span id="quizCurrentNum">1</span>/10</div>
+                        <div id="quizLevelLabel" class="font-bold text-slate-400">Level 1</div>
+                    </div>
+                    <div class="bg-slate-100 px-4 py-2 rounded-xl font-bold text-slate-600 shadow-inner">
+                        <i class="fas fa-stopwatch text-rose-500 mr-2"></i><span id="quizTimerText">Waktu Berjalan</span>
+                    </div>
                 </div>
                 
-                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-8">
-                    <div id="quizProgressBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 10%"></div>
+                <div class="w-full bg-slate-200 rounded-full h-3 mb-10 overflow-hidden shadow-inner">
+                    <div id="quizProgressBar" class="bg-gradient-to-r from-emerald-400 to-emerald-500 h-full transition-all duration-300" style="width: 10%"></div>
                 </div>
 
-                <h3 id="quizQuestionText" class="text-2xl font-black text-gray-800 mb-8 text-center leading-snug">Pertanyaan...</h3>
+                <h3 id="quizQuestionText" class="text-2xl sm:text-3xl font-black text-slate-800 mb-10 text-center leading-snug">Pertanyaan...</h3>
                 
                 <div id="quizOptionsContainer" class="space-y-4">
-                    <!-- Opsi dari JS -->
+                    <!-- Opsi Jawaban dari JS -->
                 </div>
             </div>
         </section>
 
-        <!-- 6. GAMES LIST VIEW -->
-        <section id="games-list-view" class="view-section">
-            <h2 class="text-3xl font-black text-gray-800 mb-2"><i class="fas fa-gamepad text-purple-500 mr-2"></i> Arena Permainan</h2>
-            <p class="text-gray-600 mb-8 font-bold">Mainkan game sambil menguji ingatanmu. Semakin pintar, semakin jago!</p>
+        <!-- 6. ARENA GAME LIST -->
+        <section id="games-list-view" class="view-section py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h2 class="text-3xl font-black text-white"><i class="fas fa-gamepad text-purple-400 mr-2"></i> Arena Bermain</h2>
+                    <p class="text-slate-400">Kumpulkan tambahan XP dan Bintang di sini!</p>
+                </div>
+                <button onclick="showView('dashboard-view')" class="bg-slate-800 text-white px-4 py-2 rounded-lg font-bold hover:bg-slate-700"><i class="fas fa-home"></i></button>
+            </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <!-- Game 1 -->
-                <div class="bg-white rounded-2xl overflow-hidden shadow-lg border-2 border-gray-100 hover:border-purple-400 transition-all">
-                    <div class="bg-gradient-to-r from-red-500 to-orange-500 h-32 flex justify-center items-center">
-                        <i class="fas fa-car-side text-6xl text-white"></i>
+                <div class="bg-slate-800 rounded-3xl overflow-hidden shadow-xl border border-slate-700 hover:border-purple-400 transition-all flex flex-col group">
+                    <div class="bg-[url('https://placehold.co/600x300/4c1d95/fff?text=Balap+Napas')] bg-cover h-40 flex items-center justify-center">
+                        <div class="bg-black/50 p-4 rounded-full backdrop-blur-sm"><i class="fas fa-car-side text-5xl text-white group-hover:scale-110 transition-transform"></i></div>
                     </div>
-                    <div class="p-6">
-                        <h3 class="text-xl font-black text-gray-800 mb-2">Balap Mobil Pintar</h3>
-                        <p class="text-gray-600 text-sm mb-4">Jawab cepat agar mobilmu melaju paling depan! Hati-hati kalau salah.</p>
-                        <button onclick="startGame(1)" class="w-full bg-purple-600 text-white font-bold py-2 rounded-lg hover:bg-purple-700 btn-game"><i class="fas fa-play mr-2"></i> MAIN SEKARANG</button>
+                    <div class="p-6 flex-grow flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xl font-black text-white mb-2">Respira Car Racing</h3>
+                            <p class="text-slate-400 text-sm mb-4">Balapan mobil seru! Jawab soal pernapasan dengan cepat agar mobilmu melesat.</p>
+                        </div>
+                        <button onclick="startGame(1)" class="w-full bg-purple-600 text-white font-bold py-3 rounded-xl hover:bg-purple-500 btn-hover-fx">MAIN SEKARANG <i class="fas fa-play ml-1"></i></button>
                     </div>
                 </div>
                 <!-- Game 2 -->
-                <div class="bg-white rounded-2xl overflow-hidden shadow-lg border-2 border-gray-100 hover:border-green-400 transition-all">
-                    <div class="bg-gradient-to-r from-green-500 to-teal-500 h-32 flex justify-center items-center">
-                        <i class="fas fa-sort-alpha-down text-6xl text-white"></i>
+                <div class="bg-slate-800 rounded-3xl overflow-hidden shadow-xl border border-slate-700 hover:border-emerald-400 transition-all flex flex-col group">
+                    <div class="bg-[url('https://placehold.co/600x300/065f46/fff?text=Susun+Kata')] bg-cover h-40 flex items-center justify-center">
+                        <div class="bg-black/50 p-4 rounded-full backdrop-blur-sm"><i class="fas fa-sort-alpha-down text-5xl text-white group-hover:scale-110 transition-transform"></i></div>
                     </div>
-                    <div class="p-6">
-                        <h3 class="text-xl font-black text-gray-800 mb-2">Susun Kata Gerak</h3>
-                        <p class="text-gray-600 text-sm mb-4">Susun huruf acak menjadi istilah penting pada sistem gerak manusia.</p>
-                        <button onclick="startGame(2)" class="w-full bg-green-600 text-white font-bold py-2 rounded-lg hover:bg-green-700 btn-game"><i class="fas fa-play mr-2"></i> MAIN SEKARANG</button>
+                    <div class="p-6 flex-grow flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xl font-black text-white mb-2">Teka-Teki Organ</h3>
+                            <p class="text-slate-400 text-sm mb-4">Susun huruf acak menjadi nama organ pernapasan yang benar (Alveolus, Trakea, dll).</p>
+                        </div>
+                        <button onclick="startGame(2)" class="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl hover:bg-emerald-500 btn-hover-fx">MAIN SEKARANG <i class="fas fa-play ml-1"></i></button>
                     </div>
                 </div>
                 <!-- Game 3 -->
-                <div class="bg-white rounded-2xl overflow-hidden shadow-lg border-2 border-gray-100 hover:border-blue-400 transition-all">
-                    <div class="bg-gradient-to-r from-blue-500 to-cyan-500 h-32 flex justify-center items-center">
-                        <i class="fas fa-puzzle-piece text-6xl text-white"></i>
+                <div class="bg-slate-800 rounded-3xl overflow-hidden shadow-xl border border-slate-700 hover:border-cyan-400 transition-all flex flex-col group">
+                    <div class="bg-[url('https://placehold.co/600x300/0891b2/fff?text=Jalur+Oksigen')] bg-cover h-40 flex items-center justify-center">
+                        <div class="bg-black/50 p-4 rounded-full backdrop-blur-sm"><i class="fas fa-wind text-5xl text-white group-hover:scale-110 transition-transform"></i></div>
                     </div>
-                    <div class="p-6">
-                        <h3 class="text-xl font-black text-gray-800 mb-2">Cocokkan Pasangan</h3>
-                        <p class="text-gray-600 text-sm mb-4">Temukan pasangan yang tepat antara nama tulang/otot dan fungsinya.</p>
-                        <button onclick="startGame(3)" class="w-full bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 btn-game"><i class="fas fa-play mr-2"></i> MAIN SEKARANG</button>
+                    <div class="p-6 flex-grow flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xl font-black text-white mb-2">Jalur Oksigen</h3>
+                            <p class="text-slate-400 text-sm mb-4">Urutkan organ pernapasan sesuai jalur masuknya udara dari luar ke dalam tubuh.</p>
+                        </div>
+                        <button onclick="startGame(3)" class="w-full bg-cyan-600 text-white font-bold py-3 rounded-xl hover:bg-cyan-500 btn-hover-fx">MAIN SEKARANG <i class="fas fa-play ml-1"></i></button>
                     </div>
-                </div>
-                <!-- Mockup Games Lainnya -->
-                 <div class="bg-gray-100 rounded-2xl overflow-hidden border-2 border-dashed border-gray-300 opacity-70">
-                    <div class="h-32 flex justify-center items-center text-gray-400"><i class="fas fa-bullseye text-5xl"></i></div>
-                    <div class="p-6 text-center"><h3 class="font-bold text-gray-500 mb-2">Tembak Jawaban</h3><span class="text-xs bg-gray-200 px-2 py-1 rounded">Segera Hadir</span></div>
-                </div>
-                <div class="bg-gray-100 rounded-2xl overflow-hidden border-2 border-dashed border-gray-300 opacity-70">
-                    <div class="h-32 flex justify-center items-center text-gray-400"><i class="fas fa-map-signs text-5xl"></i></div>
-                    <div class="p-6 text-center"><h3 class="font-bold text-gray-500 mb-2">Labirin Pintar</h3><span class="text-xs bg-gray-200 px-2 py-1 rounded">Segera Hadir</span></div>
-                </div>
-                <div class="bg-gray-100 rounded-2xl overflow-hidden border-2 border-dashed border-gray-300 opacity-70">
-                    <div class="h-32 flex justify-center items-center text-gray-400"><i class="fas fa-gem text-5xl"></i></div>
-                    <div class="p-6 text-center"><h3 class="font-bold text-gray-500 mb-2">Harta Karun</h3><span class="text-xs bg-gray-200 px-2 py-1 rounded">Segera Hadir</span></div>
                 </div>
             </div>
         </section>
 
-        <!-- 7. GAME PLAY VIEW -->
-        <section id="game-play-view" class="view-section">
-            <div class="flex justify-between mb-4">
-                <button onclick="endGameEarly()" class="text-red-600 font-bold bg-white px-4 py-2 rounded-lg shadow"><i class="fas fa-times mr-2"></i> Keluar Game</button>
-                <div class="bg-white px-4 py-2 rounded-lg shadow font-bold text-blue-600">Skor: <span id="gameScoreDisplay">0</span></div>
+        <!-- 7. GAME PLAY INTERFACE -->
+        <section id="game-play-view" class="view-section py-4 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center mb-6 bg-slate-800 p-4 rounded-2xl border border-slate-700">
+                <button onclick="endGameEarly()" class="text-rose-400 font-bold bg-slate-900 px-4 py-2 rounded-lg shadow border border-slate-700 hover:bg-slate-700 btn-hover-fx"><i class="fas fa-arrow-left mr-2"></i> Berhenti</button>
+                <div class="text-xl font-black text-white">SKOR: <span id="gameScoreDisplay" class="text-yellow-400">0</span></div>
             </div>
             
-            <!-- Game 1: Balap Mobil -->
-            <div id="game1Container" class="hidden">
+            <!-- GAME 1: RESPIRA CAR RACING -->
+            <div id="game1Container" class="hidden relative">
                 <canvas id="gameCanvas"></canvas>
-                <div id="game1QuizOverlay" class="hidden mt-4 bg-white rounded-xl shadow p-6">
-                    <h3 id="g1Question" class="text-xl font-bold mb-4 text-center">Pertanyaan</h3>
-                    <div id="g1Options" class="grid grid-cols-2 gap-4"></div>
+                <div id="game1QuizOverlay" class="hidden absolute inset-0 bg-slate-900/90 backdrop-blur flex flex-col justify-center items-center p-6 rounded-xl border border-slate-600 z-10">
+                    <div class="bg-white text-slate-900 p-8 rounded-2xl w-full max-w-2xl shadow-2xl text-center">
+                        <h3 id="g1Question" class="text-2xl font-black mb-6">Pertanyaan...</h3>
+                        <div id="g1Options" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Game 2: Susun Kata -->
-            <div id="game2Container" class="hidden max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-8 text-center border-t-8 border-green-500">
-                <h3 class="text-2xl font-black text-gray-800 mb-2">Susun Kata</h3>
-                <p id="g2Clue" class="text-gray-600 italic mb-6">Petunjuk: ...</p>
-                <div id="g2Jumbled" class="text-4xl font-black tracking-widest text-blue-600 mb-8 bg-blue-50 p-4 rounded-xl border border-blue-200 uppercase"></div>
-                <input type="text" id="g2Answer" placeholder="Ketik jawabanmu di sini..." class="w-full text-center text-2xl font-bold p-3 border-4 border-gray-200 rounded-xl uppercase focus:border-green-500 mb-4" autocomplete="off">
-                <button onclick="checkGame2Answer()" class="w-full bg-green-500 text-white font-black py-3 rounded-xl hover:bg-green-600 text-xl shadow">CEK JAWABAN!</button>
+            <!-- GAME 2: TEKA TEKI ORGAN -->
+            <div id="game2Container" class="hidden bg-slate-800 rounded-3xl shadow-2xl p-10 text-center border border-slate-700 max-w-2xl mx-auto">
+                <div class="mb-4 inline-block bg-emerald-500/20 text-emerald-400 px-4 py-1 rounded-full font-bold text-sm uppercase tracking-wider">Level <span id="g2Lvl">1</span></div>
+                <h3 class="text-3xl font-black text-white mb-2">Teka-Teki Organ</h3>
+                <p id="g2Clue" class="text-cyan-400 italic mb-8 font-medium bg-slate-900 p-4 rounded-xl border border-slate-700">Petunjuk: ...</p>
+                <div id="g2Jumbled" class="text-4xl md:text-5xl font-black tracking-[0.2em] text-white mb-10 bg-slate-700 p-6 rounded-2xl shadow-inner border border-slate-600 uppercase"></div>
+                <input type="text" id="g2Answer" placeholder="Ketik jawaban..." class="w-full text-center text-3xl font-black p-4 bg-slate-900 border-2 border-slate-600 rounded-2xl uppercase focus:outline-none focus:border-emerald-400 text-white mb-6" autocomplete="off">
+                <button onclick="checkGame2Answer()" class="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl hover:bg-emerald-500 text-xl shadow-[0_0_15px_rgba(16,185,129,0.4)] btn-hover-fx">CEK JAWABAN!</button>
+            </div>
+
+            <!-- GAME 3: JALUR OKSIGEN -->
+            <div id="game3Container" class="hidden bg-slate-800 rounded-3xl shadow-2xl p-6 sm:p-10 border border-slate-700 max-w-4xl mx-auto text-center">
+                <h3 class="text-3xl font-black text-white mb-4">Jalur Oksigen</h3>
+                <p class="text-slate-400 mb-8 font-medium">Klik organ di bawah ini sesuai dengan urutan jalur masuk udara yang benar!</p>
+                
+                <!-- Target Urutan -->
+                <div id="g3TargetSlots" class="flex flex-wrap justify-center gap-3 mb-10 min-h-[60px]">
+                    <!-- Slots generated by JS -->
+                </div>
+                
+                <hr class="border-slate-700 mb-8">
+                
+                <!-- Pilihan Organ Acak -->
+                <div id="g3Choices" class="flex flex-wrap justify-center gap-4">
+                    <!-- Buttons generated by JS -->
+                </div>
+
+                <div class="mt-8 flex justify-center gap-4">
+                    <button onclick="resetGame3()" class="bg-slate-700 text-white font-bold py-3 px-6 rounded-xl hover:bg-slate-600 btn-hover-fx"><i class="fas fa-undo mr-2"></i> Ulang</button>
+                    <button onclick="checkGame3Answer()" class="bg-cyan-600 text-white font-black py-3 px-8 rounded-xl hover:bg-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.4)] btn-hover-fx"><i class="fas fa-check-double mr-2"></i> Validasi Urutan</button>
+                </div>
             </div>
         </section>
 
-        <!-- 8. REPORT VIEW -->
-        <section id="report-view" class="view-section">
-            <h2 class="text-3xl font-black text-gray-800 mb-6"><i class="fas fa-trophy text-yellow-500 mr-2"></i> Hasil Belajarmu</h2>
-            <div class="bg-white rounded-3xl shadow-lg overflow-hidden border border-gray-100">
-                <div class="bg-gradient-to-r from-blue-600 to-blue-800 p-6 flex justify-between items-center text-white">
-                    <div>
-                        <h3 class="text-2xl font-black" id="repName">Nama Siswa</h3>
-                        <p class="font-bold text-blue-200" id="repClass">Kelas</p>
+        <!-- 8. REPORT (HASIL BELAJAR) VIEW -->
+        <section id="report-view" class="view-section py-8 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-black text-white mb-6"><i class="fas fa-file-contract text-yellow-400 mr-2"></i> Catatan Penjelajah</h2>
+            
+            <div class="bg-slate-800 rounded-3xl shadow-xl overflow-hidden border border-slate-700">
+                <div class="bg-gradient-to-r from-cyan-900 to-purple-900 p-8 flex flex-col md:flex-row justify-between items-center text-white">
+                    <div class="flex items-center gap-6 mb-6 md:mb-0">
+                        <div class="w-20 h-20 bg-white/10 rounded-full flex justify-center items-center border-4 border-cyan-400">
+                            <i class="fas fa-user-astronaut text-4xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-3xl font-black" id="repName">Nama Siswa</h3>
+                            <p class="font-bold text-cyan-300 text-lg" id="repClass">Kelas</p>
+                        </div>
                     </div>
-                    <div class="text-right">
-                        <div class="text-3xl font-black text-yellow-300"><i class="fas fa-star"></i> <span id="repStars">0</span></div>
-                        <p class="text-sm">Total Bintang</p>
+                    <div class="flex gap-6">
+                        <div class="bg-black/30 p-4 rounded-2xl text-center border border-white/10">
+                            <div class="text-3xl font-black text-emerald-400">Lv.<span id="repLevel">1</span></div>
+                            <p class="text-xs font-bold text-slate-400 uppercase mt-1">Level</p>
+                        </div>
+                        <div class="bg-black/30 p-4 rounded-2xl text-center border border-white/10">
+                            <div class="text-3xl font-black text-purple-400"><i class="fas fa-bolt"></i> <span id="repXP">0</span></div>
+                            <p class="text-xs font-bold text-slate-400 uppercase mt-1">Total XP</p>
+                        </div>
+                        <div class="bg-black/30 p-4 rounded-2xl text-center border border-white/10">
+                            <div class="text-3xl font-black text-yellow-400"><i class="fas fa-star"></i> <span id="repStars">0</span></div>
+                            <p class="text-xs font-bold text-slate-400 uppercase mt-1">Bintang</p>
+                        </div>
                     </div>
                 </div>
-                <div class="p-6">
-                    <h4 class="font-black text-gray-800 border-b pb-2 mb-4">Riwayat Kuis</h4>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
+                
+                <div class="p-8">
+                    <h4 class="font-black text-white text-xl mb-4 border-l-4 border-cyan-400 pl-3">Riwayat Kuis Tantangan</h4>
+                    <div class="overflow-x-auto rounded-xl border border-slate-700 mb-8">
+                        <table class="w-full text-left border-collapse min-w-[600px]">
                             <thead>
-                                <tr class="bg-gray-100 text-gray-600 text-sm">
-                                    <th class="p-3 rounded-tl-lg">Materi</th>
-                                    <th class="p-3">Waktu</th>
-                                    <th class="p-3 text-center">Nilai</th>
-                                    <th class="p-3 rounded-tr-lg text-center">Predikat</th>
+                                <tr class="bg-slate-900 text-slate-400 text-sm uppercase">
+                                    <th class="p-4">Level Materi</th>
+                                    <th class="p-4">Waktu</th>
+                                    <th class="p-4 text-center">Nilai</th>
+                                    <th class="p-4 text-center">Predikat</th>
                                 </tr>
                             </thead>
-                            <tbody id="repQuizBody">
-                                <!-- Diisi JS -->
+                            <tbody id="repQuizBody" class="text-slate-300 bg-slate-800">
+                                <!-- JS Fills -->
                             </tbody>
                         </table>
                     </div>
+                    
+                    <h4 class="font-black text-white text-xl mb-4 border-l-4 border-purple-400 pl-3">Riwayat Arena Game</h4>
+                    <div class="overflow-x-auto rounded-xl border border-slate-700">
+                        <table class="w-full text-left border-collapse min-w-[500px]">
+                            <thead>
+                                <tr class="bg-slate-900 text-slate-400 text-sm uppercase">
+                                    <th class="p-4">Nama Game</th>
+                                    <th class="p-4 text-center">Skor Terakhir</th>
+                                    <th class="p-4 text-center">Reward XP</th>
+                                </tr>
+                            </thead>
+                            <tbody id="repGameBody" class="text-slate-300 bg-slate-800">
+                                <!-- JS Fills -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-8 text-center">
+                        <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-xl transition btn-hover-fx"><i class="fas fa-print mr-2"></i> Cetak Laporan (PDF)</button>
+                    </div>
                 </div>
-            </div>
-        </section>
-
-        <!-- 9. TEACHER VIEW -->
-        <section id="teacher-view" class="view-section">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-3xl font-black text-gray-800"><i class="fas fa-chalkboard-teacher text-blue-500 mr-2"></i> Dashboard Guru</h2>
-                <button onclick="showView('login-view')" class="text-gray-500 hover:text-gray-800 font-bold bg-white px-4 py-2 rounded shadow"><i class="fas fa-times mr-1"></i> Tutup</button>
-            </div>
-            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded shadow-sm text-sm text-yellow-800">
-                <strong>Catatan Keamanan:</strong> Karena aplikasi menggunakan sistem login nama tanpa password untuk memudahkan siswa SD, data ini ditujukan untuk pemantauan cepat. Untuk akses tersentralisasi, buka tautan Google Sheets secara langsung.
-            </div>
-            <div class="bg-white p-6 rounded-2xl shadow">
-                <h3 class="font-bold mb-4">Tautan Google Sheets Database:</h3>
-                <a href="#" class="text-blue-500 hover:underline flex items-center bg-gray-50 p-4 border rounded"><i class="fas fa-external-link-alt mr-3 text-xl"></i> Buka Database Sheets Utama</a>
-                <p class="mt-4 text-sm text-gray-500">Semua riwayat (Materi, Kuis, Game) dari seluruh siswa tercatat secara real-time melalui Google Apps Script.</p>
             </div>
         </section>
 
     </main>
 
+    <!-- LOADING / SAVING OVERLAY -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] flex-col justify-center items-center hidden">
+        <i class="fas fa-circle-notch fa-spin text-6xl text-cyan-400 mb-6"></i>
+        <p class="text-2xl font-black text-white tracking-widest animate-pulse">SINKRONISASI DATA...</p>
+    </div>
+
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        // --- 1. DATA MATERI & KUIS ---
+        // ==========================================
+        // 1. DATABASE LOKAL (MATERI & SOAL PERNAPASAN)
+        // ==========================================
         const MATERI_DATA = [
             {
-                id: 1,
-                title: "Rangka Manusia",
-                tujuan: "Memahami bagian-bagian rangka dan fungsinya sebagai alat gerak pasif.",
-                image: "https://placehold.co/800x400/4F46E5/FFFFFF?text=Rangka+Manusia",
-                video: "https://www.youtube.com/embed/3aA3_WwE4zQ", // Contoh embed
+                id: 1, title: "Mengenal Sistem Pernapasan",
+                tujuan: "Memahami apa itu bernapas dan mengapa tubuh kita membutuhkan oksigen.",
+                image: "https://placehold.co/800x400/0f172a/0ea5e9?text=Bernapas+Itu+Penting",
+                video: "https://www.youtube.com/embed/5GqXwEWzHmM", // Example standard bio video
                 content: `
-                    <p>Tubuh kita dapat berdiri tegak karena memiliki <strong>rangka</strong>. Rangka adalah susunan tulang-tulang yang saling bersambungan dan membentuk tubuh kita. Rangka berfungsi sebagai alat gerak pasif karena rangka tidak dapat bergerak tanpa adanya otot.</p>
-                    <h4 class="font-bold text-xl mt-4 mb-2">Fungsi Rangka:</h4>
-                    <ul class="list-disc pl-5 mb-4">
-                        <li>Memberi bentuk tubuh.</li>
-                        <li>Menegakkan dan menopang tubuh.</li>
-                        <li>Melindungi organ-organ penting (seperti jantung, paru-paru, dan otak).</li>
-                        <li>Tempat melekatnya otot.</li>
-                        <li>Tempat pembentukan sel darah merah.</li>
-                    </ul>
-                    <h4 class="font-bold text-xl mt-4 mb-2">Bagian Utama Rangka:</h4>
-                    <p>Rangka manusia dibagi menjadi tiga kelompok utama:</p>
-                    <ol class="list-decimal pl-5">
-                        <li><strong>Rangka Kepala (Tengkorak):</strong> Melindungi otak dan membentuk wajah.</li>
-                        <li><strong>Rangka Badan:</strong> Melindungi organ dalam seperti jantung dan paru-paru (tulang dada, tulang rusuk, tulang belakang).</li>
-                        <li><strong>Rangka Anggota Gerak:</strong> Terdiri dari anggota gerak atas (tangan) dan anggota gerak bawah (kaki).</li>
+                    <p>Pernahkah kamu menahan napas? Rasanya pasti tidak nyaman. Manusia tidak bisa hidup tanpa bernapas. <strong>Bernapas</strong> adalah proses menghirup gas oksigen (O₂) dan mengeluarkan gas karbon dioksida (CO₂).</p>
+                    <h4 class="font-bold text-xl mt-6 mb-3 text-cyan-700">Mengapa Kita Membutuhkan Oksigen?</h4>
+                    <p>Oksigen ibarat bahan bakar bagi tubuh kita. Makanan yang kita makan tidak bisa menghasilkan energi jika tidak ada oksigen yang membakarnya di dalam sel. Proses "pembakaran" ini disebut <i>oksidasi biologi</i>.</p>
+                    <p class="mt-4">Tanpa energi, otot kita tidak bisa bergerak, otak tidak bisa berpikir, dan organ tubuh akan berhenti bekerja.</p>
+                `
+            },
+            {
+                id: 2, title: "Organ Pernapasan Manusia",
+                tujuan: "Mengenal nama-nama organ pernapasan dan fungsinya dari luar ke dalam tubuh.",
+                image: "https://placehold.co/800x400/0f172a/a855f7?text=Organ+Pernapasan",
+                video: "https://www.youtube.com/embed/9G_Lq9r6tJg",
+                content: `
+                    <p>Udara tidak langsung sampai ke dada kita. Udara harus melewati jalur khusus yang disebut <strong>Sistem Pernapasan</strong>.</p>
+                    <ol class="list-decimal pl-5 space-y-3 mt-4">
+                        <li><strong>Hidung & Rongga Hidung:</strong> Pintu masuk udara. Di sini udara disaring oleh bulu hidung, dihangatkan, dan dilembapkan oleh lendir.</li>
+                        <li><strong>Faring (Tekak):</strong> Persimpangan antara saluran pernapasan (tenggorokan) dan saluran pencernaan (kerongkongan).</li>
+                        <li><strong>Laring (Pangkal Tenggorokan):</strong> Terdapat pita suara dan epiglotis yang mencegah makanan masuk ke paru-paru.</li>
+                        <li><strong>Trakea (Batang Tenggorokan):</strong> Pipa kokoh berbentuk cincin tulang rawan. Terdapat silia (rambut halus) untuk menolak kotoran yang lolos dari hidung.</li>
+                        <li><strong>Bronkus:</strong> Cabang trakea yang menuju paru-paru kanan dan paru-paru kiri.</li>
+                        <li><strong>Bronkiolus:</strong> Cabang-cabang kecil dari bronkus di dalam paru-paru.</li>
+                        <li><strong>Alveolus:</strong> Gelembung-gelembung halus di ujung bronkiolus. Di sinilah terjadi <strong>pertukaran gas</strong> oksigen dan karbon dioksida.</li>
+                        <li><strong>Paru-paru:</strong> Organ utama pernapasan, dilindungi oleh selaput tipis bernama <i>pleura</i>.</li>
                     </ol>
                 `
             },
             {
-                id: 2,
-                title: "Sendi dalam Tubuh Kita",
-                tujuan: "Mengenal berbagai jenis sendi dan arah geraknya.",
-                image: "https://placehold.co/800x400/10B981/FFFFFF?text=Sendi+Manusia",
-                video: "https://www.youtube.com/embed/zOqIov1dC0c", // Contoh embed
+                id: 3, title: "Proses Bernapas (Inspirasi & Ekspirasi)",
+                tujuan: "Mengetahui bagaimana mekanisme udara bisa masuk dan keluar dari tubuh.",
+                image: "https://placehold.co/800x400/0f172a/10b981?text=Inspirasi+vs+Ekspirasi",
+                video: "https://www.youtube.com/embed/a70Nq-r5DqM",
                 content: `
-                    <p>Tulang yang satu dengan tulang yang lain dihubungkan oleh <strong>sendi</strong>. Tanpa sendi, tubuh kita akan kaku dan tidak bisa digerakkan seperti robot mati!</p>
-                    <h4 class="font-bold text-xl mt-4 mb-2">Macam-Macam Sendi Berdasarkan Arah Geraknya:</h4>
-                    <ul class="list-disc pl-5">
-                        <li><strong>Sendi Engsel:</strong> Hanya dapat digerakkan ke satu arah. Contoh: sendi pada siku dan lutut.</li>
-                        <li><strong>Sendi Peluru:</strong> Dapat digerakkan ke segala arah. Contoh: sendi antara gelang bahu dan tulang lengan atas, serta tulang paha dengan panggul.</li>
-                        <li><strong>Sendi Putar:</strong> Gerakannya memutar. Contoh: sendi antara tulang leher dan tulang tengkorak.</li>
-                        <li><strong>Sendi Pelana:</strong> Dapat digerakkan ke dua arah (samping dan depan). Contoh: sendi pada pangkal ibu jari.</li>
-                        <li><strong>Sendi Geser:</strong> Gerakannya hanya menggeser sedikit. Contoh: sendi pada pergelangan tangan dan kaki.</li>
+                    <p>Proses bernapas terdiri dari dua tahap utama, yaitu:</p>
+                    <h4 class="font-bold text-xl mt-6 mb-2 text-emerald-600">1. Inspirasi (Menghirup Udara)</h4>
+                    <p>Udara masuk -> Otot berkontraksi -> Rongga dada membesar -> Tekanan udara di paru-paru mengecil -> Udara luar tersedot masuk.</p>
+                    <h4 class="font-bold text-xl mt-6 mb-2 text-emerald-600">2. Ekspirasi (Menghembuskan Udara)</h4>
+                    <p>Udara keluar -> Otot relaksasi (mengendur) -> Rongga dada mengecil -> Tekanan udara di paru-paru membesar -> Udara didorong keluar.</p>
+                    <div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 mt-6 text-emerald-900 rounded">
+                        <strong>Diafragma</strong> adalah sekat rongga badan yang memisahkan rongga dada dan rongga perut. Ia sangat berperan dalam proses ini!
+                    </div>
+                `
+            },
+            {
+                id: 4, title: "Jenis Pernapasan",
+                tujuan: "Membedakan antara pernapasan dada dan pernapasan perut.",
+                image: "https://placehold.co/800x400/0f172a/eab308?text=Dada+vs+Perut",
+                video: "https://www.youtube.com/embed/5GqXwEWzHmM",
+                content: `
+                    <p>Berdasarkan otot yang digunakan, manusia memiliki dua cara bernapas:</p>
+                    <ul class="list-disc pl-5 space-y-4 mt-4">
+                        <li><strong>Pernapasan Dada:</strong> Menggunakan <i>otot antartulang rusuk</i>. Saat kita menghirup napas (inspirasi), tulang rusuk akan terangkat sehingga dada kita membusung.</li>
+                        <li><strong>Pernapasan Perut:</strong> Menggunakan <i>otot diafragma</i>. Saat menghirup napas, diafragma yang melengkung akan menjadi mendatar, menekan rongga perut sehingga perut tampak mengembang. Jenis pernapasan ini sering dilatih oleh para penyanyi!</li>
                     </ul>
                 `
             },
             {
-                id: 3,
-                title: "Otot sebagai Alat Gerak Aktif",
-                tujuan: "Mengetahui fungsi otot dan jenis-jenisnya.",
-                image: "https://placehold.co/800x400/EF4444/FFFFFF?text=Otot+Manusia",
-                video: "https://www.youtube.com/embed/zOqIov1dC0c",
+                id: 5, title: "Menjaga Kesehatan Paru-Paru",
+                tujuan: "Memahami cara memelihara sistem pernapasan agar tetap sehat.",
+                image: "https://placehold.co/800x400/0f172a/f43f5e?text=Paru-Paru+Sehat",
+                video: "https://www.youtube.com/embed/9G_Lq9r6tJg",
                 content: `
-                    <p><strong>Otot</strong> adalah jaringan di dalam tubuh manusia yang dapat mengerut (kontraksi) dan mengendur (relaksasi). Otot merupakan alat gerak aktif yang menggerakkan tulang.</p>
-                    <h4 class="font-bold text-xl mt-4 mb-2">Jenis-jenis Otot:</h4>
-                    <ol class="list-decimal pl-5">
-                        <li><strong>Otot Polos:</strong> Bekerja di luar kesadaran kita, terdapat pada organ dalam seperti usus dan lambung.</li>
-                        <li><strong>Otot Lurik (Otot Rangka):</strong> Bekerja di bawah kesadaran kita (bisa kita atur), menempel pada rangka/tulang.</li>
-                        <li><strong>Otot Jantung:</strong> Bentuknya seperti otot lurik tetapi bekerja di luar kesadaran (terus memompa darah tanpa henti).</li>
+                    <p>Paru-paru kita harus dijaga karena sangat rentan terhadap penyakit. Cara menjaga organ pernapasan meliputi:</p>
+                    <ul class="list-disc pl-5 space-y-2 mt-4">
+                        <li>Makan makanan bergizi agar kekebalan tubuh terjaga.</li>
+                        <li>Berolahraga secara teratur untuk memperlancar sirkulasi pernapasan.</li>
+                        <li>Beristirahat yang cukup.</li>
+                        <li><strong>TIDAK MEROKOK.</strong> Asap rokok mengandung nikotin, tar, dan karbon monoksida yang dapat merusak alveolus.</li>
+                        <li>Menggunakan masker saat berada di lingkungan yang berdebu atau berpolusi kotor.</li>
+                        <li>Menjaga sirkulasi udara di rumah (membuka jendela) dan menanam banyak pohon di sekitar lingkungan.</li>
+                    </ul>
+                `
+            },
+            {
+                id: 6, title: "Gangguan Sistem Pernapasan",
+                tujuan: "Mengenal berbagai penyakit yang menyerang alat pernapasan.",
+                image: "https://placehold.co/800x400/0f172a/ef4444?text=Gangguan+Pernapasan",
+                video: "https://www.youtube.com/embed/a70Nq-r5DqM",
+                content: `
+                    <p>Beberapa penyakit yang sering menyerang sistem pernapasan antara lain:</p>
+                    <ol class="list-decimal pl-5 space-y-3 mt-4">
+                        <li><strong>Influenza (Flu):</strong> Penyakit yang disebabkan oleh virus, menyebabkan hidung tersumbat, bersin, dan demam.</li>
+                        <li><strong>Asma:</strong> Kelainan penyumbatan saluran pernapasan yang sering disebabkan oleh alergi debu, bulu, atau udara dingin.</li>
+                        <li><strong>Bronkitis:</strong> Peradangan pada cabang tenggorokan (bronkus), menyebabkan penderita batuk berdahak hebat.</li>
+                        <li><strong>Pneumonia (Paru-paru Basah):</strong> Infeksi bakteri (Diplococcus pneumoniae) yang membuat alveolus terisi cairan.</li>
+                        <li><strong>Tuberkulosis (TBC):</strong> Penyakit paru-paru yang disebabkan oleh infeksi bakteri <i>Mycobacterium tuberculosis</i> yang menimbulkan bintil-bintil pada dinding alveolus.</li>
                     </ol>
                 `
             }
         ];
 
-        // Bank soal untuk masing-masing materi (ID materi) - Harus 10 soal per materi sesuai request
+        // 60 Bank Soal (10 soal per materi)
         const QUIZ_DATA = {
             1: [
-                { q: "Apa fungsi utama rangka bagi tubuh manusia?", o: ["Memompa darah", "Alat gerak pasif dan penopang", "Alat gerak aktif", "Mencerna makanan"], a: 1 },
-                { q: "Tulang apa yang berfungsi melindungi otak?", o: ["Tulang rusuk", "Tulang panggul", "Tengkorak", "Tulang belakang"], a: 2 },
-                { q: "Organ penting yang dilindungi oleh tulang rusuk adalah...", o: ["Jantung dan paru-paru", "Otak dan mata", "Lambung dan usus", "Ginjal dan hati"], a: 0 },
-                { q: "Tulang paha, betis, dan kering termasuk ke dalam rangka...", o: ["Tengkorak", "Badan", "Anggota gerak atas", "Anggota gerak bawah"], a: 3 },
-                { q: "Manakah yang bukan merupakan fungsi rangka?", o: ["Membentuk tubuh", "Tempat melekatnya otot", "Menghasilkan sel darah", "Mencerna makanan"], a: 3 },
-                { q: "Bagian rangka yang menyusun tangan disebut...", o: ["Anggota gerak bawah", "Anggota gerak atas", "Rangka badan", "Tengkorak"], a: 1 },
-                { q: "Tulang belakang termasuk dalam kelompok rangka...", o: ["Kepala", "Badan", "Anggota gerak", "Panggul"], a: 1 },
-                { q: "Mengapa rangka disebut alat gerak pasif?", o: ["Karena tidak bisa bergerak tanpa otot", "Karena selalu bergerak", "Karena mengendalikan otot", "Karena menghasilkan energi"], a: 0 },
-                { q: "Tempat pembentukan sel darah merah berada di...", o: ["Kulit", "Jantung", "Tulang/sumsum", "Otak"], a: 2 },
-                { q: "Berikut yang termasuk anggota gerak atas adalah...", o: ["Tulang paha", "Tulang lengan atas", "Tulang kering", "Tulang betis"], a: 1 },
+                {q:"Apa gas yang kita butuhkan saat bernapas?",o:["Karbon dioksida","Nitrogen","Oksigen","Hidrogen"],a:2},
+                {q:"Gas apa yang dibuang dari tubuh saat menghembuskan napas?",o:["Oksigen","Karbon dioksida","Ozon","Helium"],a:1},
+                {q:"Proses masuknya udara ke dalam tubuh disebut...",o:["Ekskresi","Pencernaan","Inspirasi","Ekspirasi"],a:2},
+                {q:"Mengapa sel tubuh sangat membutuhkan oksigen?",o:["Untuk mendinginkan suhu tubuh","Untuk menghasilkan energi dari makanan","Untuk membekukan darah","Untuk membentuk otot"],a:1},
+                {q:"Proses pembakaran zat makanan menggunakan oksigen di dalam tubuh disebut...",o:["Oksidasi biologi","Fotosintesis","Pengembunan","Pencernaan"],a:0},
+                {q:"Tanpa oksigen, organ apa yang paling cepat mengalami kerusakan fatal?",o:["Lambung","Otak","Usus","Ginjal"],a:1},
+                {q:"Manusia menghirup udara yang bersih dari...",o:["Pabrik","Knalpot motor","Pohon dan Tumbuhan hijau","Asap pembakaran"],a:2},
+                {q:"Bernapas adalah ciri-ciri dari...",o:["Benda mati","Makhluk hidup","Robot","Mineral"],a:1},
+                {q:"Pernyataan yang salah tentang pernapasan adalah...",o:["Menghirup O2","Mengeluarkan CO2","Menghasilkan energi","Tidak terjadi siang hari"],a:3},
+                {q:"Sistem organ yang bertugas mengambil oksigen adalah sistem...",o:["Pencernaan","Saraf","Pernapasan","Peredaran darah"],a:2}
             ],
             2: [
-                { q: "Hubungan antar tulang yang memungkinkan pergerakan disebut...", o: ["Otot", "Sendi", "Darah", "Saraf"], a: 1 },
-                { q: "Sendi yang terdapat pada lutut dan siku adalah sendi...", o: ["Peluru", "Putar", "Engsel", "Pelana"], a: 2 },
-                { q: "Sendi peluru memungkinkan gerakan ke arah...", o: ["Satu arah", "Dua arah", "Memutar", "Segala arah"], a: 3 },
-                { q: "Sendi antara tulang leher dan tulang tengkorak disebut...", o: ["Sendi geser", "Sendi putar", "Sendi engsel", "Sendi pelana"], a: 1 },
-                { q: "Contoh letak sendi pelana adalah pada...", o: ["Lutut", "Bahu", "Pangkal ibu jari", "Pergelangan kaki"], a: 2 },
-                { q: "Gerakan menggeser sedikit terjadi pada sendi...", o: ["Geser", "Putar", "Engsel", "Peluru"], a: 0 },
-                { q: "Agar sendi tidak sakit saat bergerak, di dalamnya terdapat...", o: ["Cairan sinovial/pelumas", "Udara", "Darah beku", "Otot polos"], a: 0 },
-                { q: "Sendi engsel memiliki gerakan seperti...", o: ["Roda berputar", "Pintu yang dibuka tutup", "Kertas yang digeser", "Joystick game"], a: 1 },
-                { q: "Sendi antara gelang panggul dan tulang paha adalah...", o: ["Peluru", "Engsel", "Putar", "Pelana"], a: 0 },
-                { q: "Jika tidak ada sendi, maka tubuh kita akan...", o: ["Lebih lentur", "Kaku dan sulit bergerak", "Lebih kuat", "Cepat tinggi"], a: 1 },
+                {q:"Rambut halus pada hidung berfungsi untuk...",o:["Menyaring kotoran","Membunuh kuman","Menghangatkan udara","Mencium bau"],a:0},
+                {q:"Persimpangan saluran pencernaan dan saluran pernapasan terjadi di...",o:["Trakea","Faring","Laring","Bronkus"],a:1},
+                {q:"Organ yang berbentuk pipa panjang dengan cincin tulang rawan adalah...",o:["Hidung","Faring","Trakea","Paru-paru"],a:2},
+                {q:"Pertukaran antara gas O2 dan CO2 di dalam paru-paru terjadi pada...",o:["Bronkus","Bronkiolus","Alveolus","Pleura"],a:2},
+                {q:"Cabang dari batang tenggorokan dinamakan...",o:["Bronkiolus","Alveolus","Pleura","Bronkus"],a:3},
+                {q:"Organ pernapasan yang memiliki pita suara dan jakun adalah...",o:["Faring","Laring","Trakea","Hidung"],a:1},
+                {q:"Fungsi selaput lendir di hidung adalah...",o:["Menyaring udara","Menyesuaikan kelembapan dan suhu","Memompa udara","Mematikan virus saja"],a:1},
+                {q:"Alveolus memiliki ciri khusus yaitu...",o:["Berbentuk pipa lurus","Berbentuk seperti gelembung/anggur","Terletak di hidung","Sangat keras"],a:1},
+                {q:"Selaput tipis yang membungkus paru-paru disebut...",o:["Perikardium","Pleura","Meninges","Diafragma"],a:1},
+                {q:"Urutan yang benar masuknya udara pernapasan adalah...",o:["Hidung-Trakea-Laring-Paru","Hidung-Faring-Laring-Trakea-Bronkus-Paru","Hidung-Bronkus-Trakea-Laring","Hidung-Laring-Faring-Bronkus"],a:1}
             ],
             3: [
-                { q: "Alat gerak aktif pada tubuh manusia adalah...", o: ["Tulang", "Sendi", "Otot", "Saraf"], a: 2 },
-                { q: "Otot yang menempel pada rangka tubuh disebut otot...", o: ["Polos", "Jantung", "Lurik", "Saraf"], a: 2 },
-                { q: "Otot yang bekerja memompa darah terus menerus tanpa lelah adalah...", o: ["Otot lurik", "Otot jantung", "Otot polos", "Otot betis"], a: 1 },
-                { q: "Otot polos terdapat pada organ...", o: ["Paha", "Lengan", "Usus dan lambung", "Jantung"], a: 2 },
-                { q: "Sifat kerja otot lurik adalah...", o: ["Tidak sadar", "Di bawah kesadaran/kemauan kita", "Terus menerus tanpa henti", "Sangat lambat"], a: 1 },
-                { q: "Saat mengangkat beban, otot lengan (bisep) akan...", o: ["Relaksasi/memanjang", "Kontraksi/memendek dan mengeras", "Menghilang", "Menjadi tulang"], a: 1 },
-                { q: "Kebalikan dari kontraksi otot adalah...", o: ["Relaksasi", "Fleksibel", "Iritasi", "Oksidasi"], a: 0 },
-                { q: "Bentuk otot jantung mirip dengan otot...", o: ["Polos", "Lurik", "Rangka", "Semua benar"], a: 1 },
-                { q: "Otot yang bekerja di luar kesadaran (otonom) adalah...", o: ["Otot lurik", "Otot polos dan jantung", "Otot rangka", "Hanya otot jantung"], a: 1 },
-                { q: "Mengapa otot disebut alat gerak aktif?", o: ["Karena bisa memendek dan memanjang untuk menggerakkan tulang", "Karena diam saja", "Karena bentuknya merah", "Karena menyerap makanan"], a: 0 },
+                {q:"Fase menghirup napas disebut...",o:["Ekspirasi","Ekskresi","Inspirasi","Asimilasi"],a:2},
+                {q:"Saat kita menghirup napas, volume rongga dada akan...",o:["Mengecil","Tetap","Membesar","Menghilang"],a:2},
+                {q:"Apa yang terjadi pada otot diafragma saat inspirasi?",o:["Melengkung ke atas","Mendatar / berkontraksi","Lepas","Mengecil"],a:1},
+                {q:"Udara terdorong keluar paru-paru karena...",o:["Rongga dada membesar","Tekanan udara paru-paru membesar","Diafragma mendatar","Jantung berdetak"],a:1},
+                {q:"Otot yang mengendur (relaksasi) menandakan proses...",o:["Inspirasi","Akselerasi","Ekspirasi","Oksidasi"],a:2},
+                {q:"Saat menghembuskan napas, diafragma akan kembali pada posisi...",o:["Mendatar","Lurus ke bawah","Melengkung (cembung) ke rongga dada","Berlubang"],a:2},
+                {q:"Proses pertukaran gas terjadi secara...",o:["Difusi","Osmosis","Transpor aktif","Filtrasi"],a:0},
+                {q:"Tekanan udara dalam paru-paru yang lebih KECIL dari udara luar menyebabkan...",o:["Udara keluar","Udara masuk","Napas berhenti","Tersedak"],a:1},
+                {q:"Mekanisme batuk sebenarnya bertujuan untuk...",o:["Memasukkan O2 cepat","Mengeluarkan benda asing/lendir di saluran napas","Merusak trakea","Menguatkan dada"],a:1},
+                {q:"Saat ekspirasi, tulang rusuk akan...",o:["Terangkat","Turun kembali","Patah","Berputar"],a:1}
+            ],
+            4: [
+                {q:"Pernapasan yang mengandalkan kontraksi otot antartulang rusuk disebut pernapasan...",o:["Perut","Dada","Diafragma","Internal"],a:1},
+                {q:"Pernapasan perut terjadi akibat aktivitas otot...",o:["Leher","Antartulang rusuk","Diafragma","Jantung"],a:2},
+                {q:"Ketika penyanyi sedang menarik nada panjang, teknik yang paling baik digunakan adalah pernapasan...",o:["Dada","Perut/Diafragma","Pundak","Hidung"],a:1},
+                {q:"Pada pernapasan perut fase inspirasi, posisi diafragma adalah...",o:["Melengkung","Mendatar","Naik","Miring"],a:1},
+                {q:"Pada pernapasan dada fase ekspirasi, posisi tulang rusuk adalah...",o:["Naik","Mengembang","Turun/masuk kembali","Menegang"],a:2},
+                {q:"Baik pernapasan dada maupun perut, keduanya menghasilkan pertukaran gas di organ...",o:["Jantung","Hidung","Alveolus paru-paru","Trakea"],a:2},
+                {q:"Perbedaan utama pernapasan dada dan perut terletak pada...",o:["Otot yang bekerja membesarkan rongga dada","Jenis gas yang dihirup","Jumlah organ yang terlibat","Waktu terjadinya"],a:0},
+                {q:"Pernapasan yang biasanya tanpa sadar kita lakukan saat tidur nyenyak sebagian besar didominasi oleh pernapasan...",o:["Dada","Perut","Mulut","Kulit"],a:1},
+                {q:"Bentuk diafragma saat relaksasi (menghembuskan napas) adalah...",o:["Lurus mendatar","Melengkung cembung ke atas","Segitiga","Lengkung ke bawah"],a:1},
+                {q:"Mengangkat pundak saat menarik napas dalam-dalam merupakan ciri dominasi gerakan pada pernapasan...",o:["Perut","Dada","Kulit","Diafragma"],a:1}
+            ],
+            5: [
+                {q:"Zat berbahaya dalam asap rokok yang bisa merusak alveolus adalah...",o:["Oksigen","Vitamin C","Nikotin dan Tar","Protein"],a:2},
+                {q:"Berolahraga teratur di pagi hari sangat baik untuk...",o:["Mempercepat detak jantung saja","Meningkatkan kapasitas dan kesehatan paru-paru","Membuat kulit hitam","Menghentikan pernapasan"],a:1},
+                {q:"Mengapa kita dianjurkan bernapas lewat hidung, bukan mulut?",o:["Lebih keren","Hidung bisa menyaring dan menghangatkan udara","Mulut tidak ada giginya","Napas dari mulut itu panas"],a:1},
+                {q:"Salah satu cara menjaga lingkungan rumah agar paru-paru sehat adalah...",o:["Menutup semua ventilasi","Membakar sampah di teras","Menjaga sirkulasi udara/membuka jendela","Menyemprotkan parfum terus menerus"],a:2},
+                {q:"Saat berada di jalan raya yang banyak asap kendaraan, sebaiknya kita memakai...",o:["Helm saja","Kacamata hitam","Masker pelindung debu","Payung"],a:2},
+                {q:"Zat karbon monoksida dari knalpot berbahaya karena...",o:["Sangat wangi","Mengikat sel darah merah lebih kuat daripada oksigen","Membuat kulit mulus","Bisa meledak"],a:1},
+                {q:"Menanam banyak pohon berguna karena pohon menghasilkan gas... pada siang hari.",o:["Oksigen","Karbon dioksida","Nitrogen","Helium"],a:0},
+                {q:"Tidur dengan ventilasi udara yang baik berguna untuk...",o:["Menghindari masuk angin","Memastikan pasokan oksigen saat tidur cukup","Memasukkan nyamuk","Mendinginkan tubuh saja"],a:1},
+                {q:"Kebiasaan meludah sembarangan dapat...",o:["Menyebarkan kuman/bakteri pernapasan ke udara","Menyuburkan tanah","Membuat jalan licin","Membersihkan tenggorokan orang lain"],a:0},
+                {q:"Salah satu ciri lingkungan yang buruk bagi paru-paru adalah...",o:["Banyak pohon rindang","Banyak pabrik membuang asap tebal","Rumah berventilasi besar","Jauh dari pembakaran sampah"],a:1}
+            ],
+            6: [
+                {q:"Penyakit sesak napas yang sering kambuh karena alergi udara dingin atau debu disebut...",o:["Tuberkulosis","Influenza","Asma","Bronkitis"],a:2},
+                {q:"Penyakit peradangan pada cabang tenggorokan disebut...",o:["Bronkitis","Pneumonia","Maag","Polio"],a:0},
+                {q:"Pneumonia (paru-paru basah) disebabkan oleh infeksi...",o:["Virus Influenza","Bakteri Diplococcus pneumoniae","Alergi bulu kucing","Bakteri TBC"],a:1},
+                {q:"Bintil-bintil pada alveolus yang mengganggu penyerapan oksigen merupakan ciri penyakit...",o:["TBC (Tuberkulosis)","Flu burung","Covid-19","Asma"],a:0},
+                {q:"Influenza sangat mudah menular melalui...",o:["Makanan","Gigitan nyamuk","Udara / percikan bersin","Darah"],a:2},
+                {q:"Cara mencegah penularan penyakit TBC adalah...",o:["Tidur bersama penderita","Menggunakan masker dan tidak membuang dahak sembarangan","Memakan makanan pedas","Berjemur di malam hari"],a:1},
+                {q:"Bakteri penyebab Tuberkulosis adalah...",o:["E. coli","Mycobacterium tuberculosis","Salmonella typhi","Amoeba"],a:1},
+                {q:"Gejala batuk berdahak tebal, demam ringan, dan rasa nyeri di dada sering menjadi gejala peradangan paru yang disebut...",o:["Pneumonia","Panu","Cacar air","Tipes"],a:0},
+                {q:"Orang yang mengidap Asma saluran pernapasannya akan mengalami...",o:["Pelebaran sangat besar","Penyempitan otot saluran","Tulang hidung memanjang","Paru-paru menghilang"],a:1},
+                {q:"Untuk mengetahui adanya infeksi paru, dokter sering melakukan pemeriksaan...",o:["Rontgen dada (X-Ray)","Cek urine","USG perut","Pemeriksaan mata"],a:0}
             ]
         };
 
-        // --- 2. STATE MANAGEMENT ---
+        // ==========================================
+        // 2. STATE MANAGEMENT & API SETUP
+        // ==========================================
         let appState = {
             user: { name: "", class: "" },
-            stats: { stars: 0, progress: 0, completedMaterials: [], quizHistory: [] },
+            stats: { xp: 0, level: 1, stars: 0, completedMaterials: [], quizHistory: [], gameHistory: [] },
+            session: { start: 0, activeView: 'login-view' },
             currentMateri: null,
-            currentQuiz: null,
-            currentGame: null
+            currentQuiz: null
         };
         const API_URL = "https://script.google.com/macros/s/AKfycbwEtTQpdP4mKD-xo90_7Yg3ufkEaAh3tcIzYyOhpkIT-Y0i3XT7B0ifSMVS3DCtOzHQ/exec";
 
-        // --- 3. SYSTEM LOGIC (INIT & NAVIGATION) ---
+        // INIT
         window.onload = () => {
-            loadIdentity();
-            if (appState.user.name) {
-                initDashboard();
-                showView('dashboard-view');
+            initBubbles();
+            const saved = localStorage.getItem('respiraUser_v1');
+            if (saved) {
+                appState = JSON.parse(saved);
+                document.getElementById('login-view').classList.remove('active');
                 document.getElementById('mainNav').classList.remove('hidden');
+                document.getElementById('mainContent').classList.remove('hidden');
+                updateUI();
+                showView('dashboard-view');
             }
         };
 
-        function showView(viewId) {
-            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-            document.getElementById(viewId).classList.add('active');
-            window.scrollTo({top: 0, behavior: 'smooth'});
-            
-            // Re-render specific views
-            if (viewId === 'materi-list-view') renderMateriList();
-            if (viewId === 'report-view') renderReport();
-        }
-
-        function loadIdentity() {
-            const saved = localStorage.getItem('eduQuestUser');
-            if (saved) {
-                appState = JSON.parse(saved);
-                document.getElementById('navUserName').innerText = appState.user.name;
-                document.getElementById('navUserClass').innerText = appState.user.class;
+        // UI FX
+        function initBubbles() {
+            const container = document.getElementById('bubbles-container');
+            for(let i=0; i<15; i++){
+                let b = document.createElement('div');
+                b.className = 'bubble';
+                b.style.width = Math.random() * 40 + 10 + 'px';
+                b.style.height = b.style.width;
+                b.style.left = Math.random() * 100 + 'vw';
+                b.style.animationDuration = Math.random() * 5 + 3 + 's';
+                b.style.animationDelay = Math.random() * 5 + 's';
+                container.appendChild(b);
             }
         }
 
-        function saveIdentity() {
-            localStorage.setItem('eduQuestUser', JSON.stringify(appState));
-            updateHeader();
-        }
-
-        function updateHeader() {
-            document.getElementById('navUserName').innerText = appState.user.name;
-            document.getElementById('navUserClass').innerText = appState.user.class;
-            document.getElementById('dashName').innerText = appState.user.name;
-            document.getElementById('dashClass').innerText = appState.user.class;
-            document.getElementById('dashStars').innerText = appState.stats.stars;
-            let prog = (appState.stats.completedMaterials.length / MATERI_DATA.length) * 100;
-            document.getElementById('dashProgress').innerText = Math.round(prog);
-        }
-
+        // ==========================================
+        // 3. CORE LOGIC (LOGIN, SAVE, NAVIGATION)
+        // ==========================================
         async function login() {
             const name = document.getElementById('inputNama').value.trim();
             const cls = document.getElementById('inputKelas').value;
-            
-            if (!name || !cls) {
-                Swal.fire('Oops!', 'Masukkan nama dan pilih kelasmu dulu ya!', 'warning');
-                return;
-            }
+            if (!name || !cls) { Swal.fire('Tunggu dulu!', 'Masukkan nama dan pilih kelasmu ya!', 'warning'); return; }
             
             appState.user = { name, class: cls };
-            // Initialize basic stats if new
-            if (!appState.stats) appState.stats = { stars: 0, progress: 0, completedMaterials: [], quizHistory: [] };
+            if (!appState.stats.xp) {
+                appState.stats = { xp: 0, level: 1, stars: 0, completedMaterials: [], quizHistory: [], gameHistory: [] };
+            }
+            saveState();
             
-            saveIdentity();
-            initDashboard();
+            // UI Transition
+            document.getElementById('login-view').classList.add('hidden'); // Hide completely
+            document.getElementById('login-view').classList.remove('active');
             document.getElementById('mainNav').classList.remove('hidden');
+            document.getElementById('mainContent').classList.remove('hidden');
+            
+            updateUI();
             showView('dashboard-view');
             
-            // Send login log to Apps Script silently
-            await sendToSheet('LOGIN', { nama: name, kelas: cls, waktu: new Date().toISOString() });
+            // Sync API
+            sendToAPI('LOGIN', { waktu: new Date().toISOString() });
         }
+
+        function toggleUserMenu() { document.getElementById('userMenu').classList.toggle('hidden'); }
 
         function logout() {
             Swal.fire({
-                title: 'Ganti Siswa?',
-                text: "Kamu akan kembali ke halaman awal.",
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Ya, Keluar'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    localStorage.removeItem('eduQuestUser');
-                    appState.user = { name: "", class: "" };
-                    document.getElementById('mainNav').classList.add('hidden');
-                    document.getElementById('inputNama').value = "";
-                    document.getElementById('inputKelas').value = "";
-                    showView('login-view');
+                title: 'Ganti Penjelajah?', text: "Kembali ke layar utama?", icon: 'question',
+                showCancelButton: true, confirmButtonText: 'Ya', cancelButtonText: 'Batal'
+            }).then((res) => {
+                if(res.isConfirmed) {
+                    localStorage.removeItem('respiraUser_v1');
+                    location.reload(); // Hard reset UI state
                 }
             });
         }
 
-        function initDashboard() {
-            updateHeader();
-            document.getElementById('mainContent').classList.remove('hidden');
+        function saveState() {
+            appState.stats.level = Math.floor(appState.stats.xp / 200) + 1; // 200 XP = 1 Level
+            localStorage.setItem('respiraUser_v1', JSON.stringify(appState));
+            updateUI();
         }
 
-        // --- 4. DATA INTEGRATION (GOOGLE APPS SCRIPT) ---
-        async function sendToSheet(actionType, dataPayload) {
-            try {
-                // Tampilkan loading kecil jika bukan silent
-                const id_aktivitas = "ACT_" + new Date().getTime();
-                const payload = {
-                    action: actionType,
-                    id_aktivitas: id_aktivitas,
-                    nama: appState.user.name,
-                    kelas: appState.user.class,
-                    data: dataPayload
-                };
-
-                console.log("Sending to Google Sheets:", payload);
-                // POST Request via fetch
-                fetch(API_URL, {
-                    method: 'POST',
-                    mode: 'no-cors', // Penting untuk bypass CORS policy Google Script sederhana
-                    cache: 'no-cache',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                }).then(res => console.log("Sent securely to background"));
-                
-            } catch (error) {
-                console.error("Gagal mengirim data ke Sheets", error);
-            }
+        function updateUI() {
+            // Nav
+            document.getElementById('navUserName').innerText = appState.user.name;
+            document.getElementById('navUserClass').innerText = appState.user.class;
+            document.getElementById('navXP').innerText = appState.stats.xp;
+            document.getElementById('navLevel').innerText = appState.stats.level;
+            document.getElementById('navStars').innerText = appState.stats.stars;
+            // Dash
+            if(document.getElementById('dashName')) document.getElementById('dashName').innerText = appState.user.name;
         }
 
-        // --- 5. MATERI LOGIC ---
+        function showView(id) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            window.scrollTo({top: 0, behavior: 'smooth'});
+            appState.session.activeView = id;
+            if(id === 'materi-list-view') renderMateriList();
+            if(id === 'report-view') renderReport();
+        }
+
+        async function sendToAPI(action, dataObj) {
+            const payload = {
+                action: action, id_aktivitas: "RESP_" + new Date().getTime(),
+                nama: appState.user.name, kelas: appState.user.class, data: dataObj
+            };
+            fetch(API_URL, { method: 'POST', mode: 'no-cors', cache: 'no-cache',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(r => console.log("Silent Sync OK")).catch(e => console.log(e));
+        }
+
+        // ==========================================
+        // 4. DUNIA MATERI LOGIC
+        // ==========================================
         function renderMateriList() {
-            const container = document.getElementById('materiContainer');
-            container.innerHTML = "";
+            const c = document.getElementById('materiContainer'); c.innerHTML = "";
             MATERI_DATA.forEach((m, idx) => {
-                const isCompleted = appState.stats.completedMaterials.includes(m.id);
-                const html = `
-                    <div class="bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-100 flex flex-col sm:flex-row transition-transform hover:-translate-y-1">
-                        <img src="${m.image}" class="w-full sm:w-1/3 h-48 sm:h-auto object-cover border-r border-gray-100">
-                        <div class="p-6 flex flex-col justify-between w-full">
-                            <div>
-                                <div class="flex justify-between items-start mb-2">
-                                    <h3 class="text-xl font-black text-blue-700">${idx+1}. ${m.title}</h3>
-                                    ${isCompleted ? '<span class="bg-green-100 text-green-600 text-xs font-bold px-2 py-1 rounded"><i class="fas fa-check"></i> Selesai</span>' : ''}
-                                </div>
-                                <p class="text-gray-500 text-sm mb-4 line-clamp-2">${m.tujuan}</p>
-                            </div>
-                            <button onclick="openMateri(${m.id})" class="w-full bg-blue-100 text-blue-600 font-bold py-2 rounded-lg hover:bg-blue-200 transition-colors">
-                                Pelajari <i class="fas fa-arrow-right ml-1"></i>
-                            </button>
+                const isDone = appState.stats.completedMaterials.includes(m.id);
+                c.innerHTML += `
+                    <div class="bg-slate-800 rounded-2xl overflow-hidden border ${isDone ? 'border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'border-slate-700'} relative flex flex-col group transition-transform hover:-translate-y-1">
+                        <div class="h-32 bg-slate-700 relative overflow-hidden">
+                            <img src="${m.image}" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity">
+                            <div class="absolute top-2 left-2 bg-black/60 px-2 py-1 rounded text-xs font-bold text-cyan-400 backdrop-blur">LVL ${m.id}</div>
+                            ${isDone ? '<div class="absolute top-2 right-2 bg-emerald-500 px-2 py-1 rounded text-xs font-bold text-white shadow"><i class="fas fa-check"></i> Selesai</div>' : ''}
                         </div>
-                    </div>
-                `;
-                container.innerHTML += html;
+                        <div class="p-5 flex flex-col flex-grow">
+                            <h3 class="text-xl font-black text-white mb-2">${m.title}</h3>
+                            <p class="text-slate-400 text-sm flex-grow mb-4">${m.tujuan}</p>
+                            <button onclick="openMateri(${m.id})" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 rounded-lg transition btn-hover-fx">PELAJARI</button>
+                        </div>
+                    </div>`;
             });
         }
 
         function openMateri(id) {
             const m = MATERI_DATA.find(x => x.id === id);
-            if(!m) return;
             appState.currentMateri = id;
+            document.getElementById('mDetailLevelBadge').innerText = `LEVEL ${id}`;
             document.getElementById('mDetailTitle').innerText = m.title;
             document.getElementById('mDetailTujuan').innerText = m.tujuan;
             document.getElementById('mDetailImage').src = m.image;
             document.getElementById('mDetailContent').innerHTML = m.content;
             document.getElementById('mDetailVideo').src = m.video;
             
-            // Mark as read in stat
-            if (!appState.stats.completedMaterials.includes(id)) {
+            if(!appState.stats.completedMaterials.includes(id)) {
                 appState.stats.completedMaterials.push(id);
-                saveIdentity();
-                sendToSheet('BACA_MATERI', { id_materi: id, judul: m.title });
+                appState.stats.xp += 50; // Reward reading
+                saveState();
+                sendToAPI('BACA_MATERI', { id_materi: id, judul: m.title, xp_gain: 50 });
+                Swal.fire({toast:true, position:'top-end', icon:'success', title:'+50 XP Materi Terbaca!', showConfirmButton:false, timer:2000});
             }
-
             document.getElementById('btnStartQuiz').onclick = () => startQuiz(id);
             showView('materi-detail-view');
         }
 
-        // --- 6. QUIZ LOGIC ---
-        let quizState = { qIndex: 0, score: 0, questions: [], timer: null, timeLeft: 0 };
-        function startQuiz(materiId) {
-            const questions = QUIZ_DATA[materiId];
-            if (!questions) {
-                Swal.fire('Oops', 'Kuis untuk materi ini belum tersedia!', 'info');
-                return;
-            }
-            quizState = {
-                materiId: materiId,
-                qIndex: 0,
-                score: 0,
-                questions: [...questions].sort(() => Math.random() - 0.5), // Acak ringan
-                startTime: Date.now()
-            };
+        // ==========================================
+        // 5. KUIS TANTANGAN LOGIC
+        // ==========================================
+        let qState = { id: 0, index: 0, score: 0, qList: [], startTime: 0, timerInt: null };
+        
+        function startQuiz(id) {
+            qState.id = id; qState.index = 0; qState.score = 0;
+            qState.qList = [...QUIZ_DATA[id]].sort(() => Math.random() - 0.5);
+            qState.startTime = Date.now();
+            document.getElementById('quizLevelLabel').innerText = `Level ${id}`;
             showView('quiz-view');
-            renderQuizQuestion();
+            renderQuestion();
+            startQuizTimer();
         }
 
-        function renderQuizQuestion() {
-            const qData = quizState.questions[quizState.qIndex];
-            document.getElementById('quizCurrentNum').innerText = quizState.qIndex + 1;
-            document.getElementById('quizProgressBar').style.width = `${((quizState.qIndex) / 10) * 100}%`;
-            document.getElementById('quizQuestionText').innerText = qData.q;
+        function startQuizTimer() {
+            clearInterval(qState.timerInt);
+            qState.timerInt = setInterval(() => {
+                let s = Math.floor((Date.now() - qState.startTime)/1000);
+                let mins = Math.floor(s/60).toString().padStart(2, '0');
+                let secs = (s%60).toString().padStart(2, '0');
+                document.getElementById('quizTimerText').innerText = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function renderQuestion() {
+            let q = qState.qList[qState.index];
+            document.getElementById('quizCurrentNum').innerText = qState.index + 1;
+            document.getElementById('quizProgressBar').style.width = `${((qState.index)/10)*100}%`;
+            document.getElementById('quizQuestionText').innerText = q.q;
             
-            const optsContainer = document.getElementById('quizOptionsContainer');
-            optsContainer.innerHTML = "";
-            
-            qData.o.forEach((opt, idx) => {
-                const btn = document.createElement('button');
-                btn.className = "w-full text-left p-4 rounded-xl border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 font-semibold text-gray-700 transition-all focus:outline-none focus:ring focus:ring-blue-200";
-                btn.innerHTML = `<span class="inline-block w-8 h-8 text-center bg-gray-200 rounded-full mr-3">${String.fromCharCode(65+idx)}</span> ${opt}`;
-                btn.onclick = () => handleQuizAnswer(idx, qData.a);
-                optsContainer.appendChild(btn);
+            let opts = document.getElementById('quizOptionsContainer'); opts.innerHTML = "";
+            q.o.forEach((text, i) => {
+                let b = document.createElement('button');
+                b.className = "w-full text-left p-5 rounded-2xl border-2 border-slate-300 hover:border-cyan-400 bg-white font-bold text-slate-700 transition shadow-sm text-lg focus:outline-none";
+                b.innerHTML = `<span class="inline-block w-8 h-8 text-center leading-8 bg-slate-200 text-slate-700 rounded-full mr-3 text-sm">${String.fromCharCode(65+i)}</span> ${text}`;
+                b.onclick = () => answerQuiz(i, q.a);
+                opts.appendChild(b);
             });
         }
 
-        function handleQuizAnswer(selectedIdx, correctIdx) {
-            const isCorrect = (selectedIdx === correctIdx);
-            const optsContainer = document.getElementById('quizOptionsContainer');
-            const btns = optsContainer.querySelectorAll('button');
+        function answerQuiz(selected, correct) {
+            let btns = document.getElementById('quizOptionsContainer').querySelectorAll('button');
+            btns.forEach(b => b.disabled = true);
             
-            btns.forEach(btn => btn.disabled = true);
-            
-            if (isCorrect) {
-                quizState.score += 10;
-                btns[selectedIdx].classList.replace('border-gray-200', 'border-green-500');
-                btns[selectedIdx].classList.replace('hover:bg-blue-50', 'bg-green-100');
-                btns[selectedIdx].classList.add('text-green-800');
+            if(selected === correct) {
+                qState.score += 10;
+                btns[selected].classList.replace('border-slate-300', 'border-emerald-500');
+                btns[selected].classList.add('bg-emerald-50', 'text-emerald-800');
             } else {
-                btns[selectedIdx].classList.replace('border-gray-200', 'border-red-500');
-                btns[selectedIdx].classList.replace('hover:bg-blue-50', 'bg-red-100');
-                btns[correctIdx].classList.replace('border-gray-200', 'border-green-500');
-                btns[correctIdx].classList.add('bg-green-100');
+                btns[selected].classList.replace('border-slate-300', 'border-rose-500');
+                btns[selected].classList.add('bg-rose-50', 'text-rose-800');
+                btns[correct].classList.replace('border-slate-300', 'border-emerald-500');
+                btns[correct].classList.add('bg-emerald-50');
             }
 
             setTimeout(() => {
-                quizState.qIndex++;
-                if (quizState.qIndex < 10 && quizState.qIndex < quizState.questions.length) {
-                    renderQuizQuestion();
-                } else {
-                    finishQuiz();
-                }
+                qState.index++;
+                if(qState.index < 10) renderQuestion();
+                else finishQuiz();
             }, 1000);
         }
 
         function finishQuiz() {
-            const timeTaken = Math.floor((Date.now() - quizState.startTime) / 1000); // dalam detik
-            let predikat = "";
-            if (quizState.score >= 90) predikat = "Luar Biasa";
-            else if (quizState.score >= 80) predikat = "Sangat Baik";
-            else if (quizState.score >= 70) predikat = "Baik";
-            else if (quizState.score >= 60) predikat = "Cukup";
-            else predikat = "Ayo Belajar Lagi";
-
-            const earnedStars = Math.floor(quizState.score / 20);
-            appState.stats.stars += earnedStars;
+            clearInterval(qState.timerInt);
+            let timeTaken = Math.floor((Date.now() - qState.startTime)/1000);
+            let predikat = qState.score >= 90 ? "Master" : (qState.score >= 70 ? "Ahli" : "Pemula");
+            let xpGained = qState.score; // 1 point = 1 XP
+            let starsGained = Math.floor(qState.score / 25); // Max 4 stars per quiz
             
-            const historyData = {
-                id_materi: quizState.materiId,
-                judul: MATERI_DATA.find(m=>m.id === quizState.materiId).title,
-                skor: quizState.score,
-                predikat: predikat,
-                tanggal: new Date().toLocaleDateString(),
-                durasi: timeTaken
+            appState.stats.xp += xpGained;
+            appState.stats.stars += starsGained;
+            
+            let rec = { 
+                id: qState.id, judul: MATERI_DATA.find(m=>m.id===qState.id).title, 
+                skor: qState.score, predikat: predikat, tgl: new Date().toLocaleDateString()
             };
-            appState.stats.quizHistory.push(historyData);
-            saveIdentity();
+            appState.stats.quizHistory.push(rec);
+            saveState();
             
-            // Send to Google Sheets
-            sendToSheet('NILAI_KUIS', historyData);
-
+            sendToAPI('NILAI_KUIS', { id_materi: qState.id, judul: rec.judul, skor: qState.score, predikat: predikat, durasi: timeTaken, xp: xpGained });
+            
             Swal.fire({
-                title: 'Kuis Selesai!',
-                html: `
-                    <div class="text-left text-lg">
-                        <p>Nilai Kamu: <b class="text-3xl text-blue-600">${quizState.score}</b>/100</p>
-                        <p>Predikat: <b class="text-yellow-600">${predikat}</b></p>
-                        <p>Bintang didapat: <b>+${earnedStars} <i class="fas fa-star text-yellow-400"></i></b></p>
-                    </div>
-                `,
-                icon: quizState.score > 70 ? 'success' : 'info',
-                confirmButtonText: 'Kembali ke Materi'
-            }).then(() => {
-                showView('materi-detail-view');
-            });
+                title: 'Misi Kuis Selesai!',
+                html: `<div class="text-lg">Nilai Akhir: <b class="text-3xl text-emerald-500">${qState.score}</b><br>
+                       Predikat: <b>${predikat}</b><br>
+                       XP didapat: <b class="text-purple-500">+${xpGained} XP</b><br>
+                       Bintang: <b class="text-yellow-500">+${starsGained} <i class="fas fa-star"></i></b></div>`,
+                icon: qState.score >= 70 ? 'success' : 'info', confirmButtonText: 'Lanjut'
+            }).then(() => showView('materi-detail-view'));
         }
 
-        // --- 7. GAMES LOGIC ---
-        function startGame(gameId) {
-            appState.currentGame = gameId;
-            showView('game-play-view');
+        // ==========================================
+        // 6. ARENA GAME LOGIC
+        // ==========================================
+        function startGame(id) {
             document.getElementById('game1Container').classList.add('hidden');
             document.getElementById('game2Container').classList.add('hidden');
+            document.getElementById('game3Container').classList.add('hidden');
+            document.getElementById('gameScoreDisplay').innerText = "0";
+            showView('game-play-view');
             
-            if (gameId === 1) initGame1(); // Balap Mobil
-            if (gameId === 2) initGame2(); // Susun Kata
-            if (gameId === 3) {
-                // Dummy implementasi untuk representasi game ke-3
-                Swal.fire('Tunggu dulu!', 'Game Cocokkan Pasangan sedang disiapkan untuk update berikutnya!', 'info');
-                showView('games-list-view');
-            }
+            if(id === 1) initGame1();
+            if(id === 2) initGame2();
+            if(id === 3) initGame3();
         }
-
         function endGameEarly() {
-            if(window.game1Loop) cancelAnimationFrame(window.game1Loop);
+            if(window.g1Loop) cancelAnimationFrame(window.g1Loop);
             showView('games-list-view');
         }
 
-        // --- GAME 1: BALAP MOBIL PINTAR (CANVAS) ---
-        let g1State = { active: false, score: 0, carX: 50, speed: 2, bgOffset: 0, qIndex: 0, qs: [] };
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+        // --- GAME 1: RESPIRA CAR RACING ---
+        let g1 = { active: false, score: 0, carX: 50, speed: 2, bgOffset: 0, qIdx: 0, qs: [], enemyX: 100 };
+        const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
         
         function initGame1() {
             canvas.width = 800; canvas.height = 400;
             document.getElementById('game1Container').classList.remove('hidden');
-            document.getElementById('gameScoreDisplay').innerText = "0";
-            
-            // Siapkan soal acak dari materi 1 & 2
-            let combinedQs = [...QUIZ_DATA[1], ...QUIZ_DATA[2]].sort(() => Math.random() - 0.5).slice(0, 5); // 5 soal untuk balap
-            g1State = { active: true, score: 0, carX: 100, speed: 5, bgOffset: 0, qIndex: 0, qs: combinedQs, enemyX: 100 };
-            
+            // Ambil acak 5 pertanyaan dari semua level
+            let allQ = []; Object.values(QUIZ_DATA).forEach(arr => allQ = allQ.concat(arr));
+            g1 = { active: true, score: 0, carX: 100, speed: 6, bgOffset: 0, qIdx: 0, qs: allQ.sort(()=>0.5-Math.random()).slice(0,5), enemyX: 100 };
             document.getElementById('game1QuizOverlay').classList.add('hidden');
-            game1LoopFn();
-            triggerG1Question(); // Panggil pertanyaan pertama setelah 2 detik
+            loopG1();
+            triggerG1Q();
         }
 
-        function triggerG1Question() {
-            if(g1State.qIndex >= g1State.qs.length) {
-                setTimeout(finishGame1, 2000);
-                return;
-            }
+        function triggerG1Q() {
+            if(!g1.active) return;
+            if(g1.qIdx >= g1.qs.length) { setTimeout(finishG1, 2000); return; }
             setTimeout(() => {
-                g1State.active = false; // Pause animasi
-                const q = g1State.qs[g1State.qIndex];
+                g1.active = false;
+                let q = g1.qs[g1.qIdx];
                 document.getElementById('g1Question').innerText = q.q;
-                const optsDiv = document.getElementById('g1Options');
-                optsDiv.innerHTML = "";
-                q.o.forEach((opt, idx) => {
-                    const btn = document.createElement('button');
-                    btn.className = "bg-blue-100 hover:bg-blue-200 border-2 border-blue-400 p-3 rounded font-bold text-sm h-full";
-                    btn.innerText = opt;
-                    btn.onclick = () => answerG1(idx, q.a);
-                    optsDiv.appendChild(btn);
+                let opts = document.getElementById('g1Options'); opts.innerHTML = "";
+                q.o.forEach((txt, i) => {
+                    let b = document.createElement('button');
+                    b.className = "bg-slate-100 hover:bg-cyan-100 border-2 border-slate-300 hover:border-cyan-400 p-4 rounded-xl font-bold text-slate-800 transition";
+                    b.innerText = txt;
+                    b.onclick = () => ansG1(i, q.a);
+                    opts.appendChild(b);
                 });
                 document.getElementById('game1QuizOverlay').classList.remove('hidden');
-            }, 3000); // Muncul setiap 3 detik animasi jalan
+            }, 3000);
         }
 
-        function answerG1(selected, correct) {
+        function ansG1(sel, cor) {
             document.getElementById('game1QuizOverlay').classList.add('hidden');
-            if (selected === correct) {
-                g1State.score += 20;
-                g1State.carX += 100; // Maju
-                Swal.fire({toast: true, position: 'top-end', icon: 'success', title: 'Benar! Ngeeng!!', showConfirmButton: false, timer: 1500});
+            if(sel === cor) {
+                g1.score += 20; g1.carX += 100;
+                Swal.fire({toast:true, position:'top-end', icon:'success', title:'Ngeeng!', timer:1000, showConfirmButton:false});
             } else {
-                g1State.enemyX += 100; // Musuh maju
-                Swal.fire({toast: true, position: 'top-end', icon: 'error', title: 'Salah! Yahh...', showConfirmButton: false, timer: 1500});
+                g1.enemyX += 100;
+                Swal.fire({toast:true, position:'top-end', icon:'error', title:'Awas Tertinggal!', timer:1000, showConfirmButton:false});
             }
-            document.getElementById('gameScoreDisplay').innerText = g1State.score;
-            g1State.qIndex++;
-            g1State.active = true;
-            triggerG1Question();
+            document.getElementById('gameScoreDisplay').innerText = g1.score;
+            g1.qIdx++; g1.active = true;
+            triggerG1Q();
         }
 
-        function game1LoopFn() {
-            if (appState.currentGame !== 1) return;
-            if (g1State.active) {
-                g1State.bgOffset -= g1State.speed;
-                if (g1State.bgOffset <= -800) g1State.bgOffset = 0;
-            }
-
-            // Draw Background (Road)
-            ctx.fillStyle = '#4ade80'; // Rumput
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#374151'; // Aspal
-            ctx.fillRect(0, 100, canvas.width, 200);
+        function loopG1() {
+            if(appState.session.activeView !== 'game-play-view') return;
+            if(g1.active) { g1.bgOffset -= g1.speed; if(g1.bgOffset <= -800) g1.bgOffset = 0; }
             
-            // Garis jalan
-            ctx.fillStyle = '#fff';
+            // Draw Scenery
+            ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#334155'; ctx.fillRect(0, 150, canvas.width, 200); // Road
+            ctx.fillStyle = '#e2e8f0';
             for(let i=0; i<10; i++) {
-                ctx.fillRect(i * 100 + g1State.bgOffset, 195, 50, 10);
-                ctx.fillRect(i * 100 + 800 + g1State.bgOffset, 195, 50, 10);
+                ctx.fillRect(i*100 + g1.bgOffset, 245, 50, 10);
+                ctx.fillRect(i*100 + 800 + g1.bgOffset, 245, 50, 10);
             }
-
-            // Draw Player Car (Red)
-            ctx.fillStyle = 'red';
-            ctx.fillRect(g1State.carX, 120, 80, 40);
-            ctx.fillStyle = 'black';
-            ctx.fillRect(g1State.carX+10, 110, 20, 10); ctx.fillRect(g1State.carX+50, 110, 20, 10); // Roda atas
-            ctx.fillRect(g1State.carX+10, 160, 20, 10); ctx.fillRect(g1State.carX+50, 160, 20, 10); // Roda bawah
+            // Player
+            ctx.fillStyle = '#0ea5e9'; ctx.fillRect(g1.carX, 180, 80, 40);
+            ctx.fillStyle = 'white'; ctx.font="20px Arial"; ctx.fillText("P1", g1.carX+25, 205);
+            // Enemy
+            ctx.fillStyle = '#ef4444'; ctx.fillRect(g1.enemyX, 280, 80, 40);
             
-            // Draw Enemy Car (Blue)
-            ctx.fillStyle = 'blue';
-            ctx.fillRect(g1State.enemyX, 230, 80, 40);
-            ctx.fillStyle = 'black';
-            ctx.fillRect(g1State.enemyX+10, 220, 20, 10); ctx.fillRect(g1State.enemyX+50, 220, 20, 10);
-            ctx.fillRect(g1State.enemyX+10, 270, 20, 10); ctx.fillRect(g1State.enemyX+50, 270, 20, 10);
-
-            // Garis Finis (jika soal habis)
-            if (g1State.qIndex >= g1State.qs.length) {
-                ctx.fillStyle = 'white';
-                ctx.fillRect(700 + g1State.bgOffset, 100, 20, 200);
-                ctx.fillStyle = 'black';
-                for(let k=0; k<10; k++) ctx.fillRect(700 + g1State.bgOffset, 100 + (k*20), 20, 10);
+            // Finish line
+            if(g1.qIdx >= g1.qs.length) {
+                ctx.fillStyle = 'white'; ctx.fillRect(700 + g1.bgOffset, 150, 20, 200);
             }
-
-            window.game1Loop = requestAnimationFrame(game1LoopFn);
+            window.g1Loop = requestAnimationFrame(loopG1);
         }
 
-        function finishGame1() {
-            g1State.active = false;
-            cancelAnimationFrame(window.game1Loop);
-            let msg = g1State.carX > g1State.enemyX ? "Kamu Juara 1!" : "Kamu Kalah Cepat!";
-            let addedStars = Math.floor(g1State.score / 20);
-            appState.stats.stars += addedStars;
-            saveIdentity();
-            
-            sendToSheet('NILAI_GAME', { nama_game: "Balap Mobil", skor: g1State.score });
-            
-            Swal.fire({
-                title: 'Balapan Selesai!',
-                text: `${msg} Skor akhir: ${g1State.score}. Bintang +${addedStars}`,
-                icon: g1State.carX > g1State.enemyX ? 'success' : 'info',
-                confirmButtonText: 'Kembali ke Arena'
-            }).then(() => {
-                showView('games-list-view');
-            });
+        function finishG1() {
+            g1.active = false; cancelAnimationFrame(window.g1Loop);
+            processGameEnd("Respira Car Racing", g1.score, g1.carX > g1.enemyX);
         }
 
-        // --- GAME 2: SUSUN KATA ---
-        const g2Words = [
-            { word: "RANGKA", clue: "Kumpulan tulang penopang tubuh" },
-            { word: "SENDI", clue: "Penghubung antar tulang" },
-            { word: "ENGSEL", clue: "Jenis sendi di lutut" },
-            { word: "LURIK", clue: "Jenis otot yang menempel pada tulang" }
+        // --- GAME 2: TEKA TEKI ORGAN ---
+        const g2Data = [
+            { w: "HIDUNG", c: "Pintu gerbang udara" },
+            { w: "TRAKEA", c: "Batang tenggorokan berlapis cincin tulang rawan" },
+            { w: "ALVEOLUS", c: "Tempat pertukaran O2 dan CO2" },
+            { w: "DIAFRAGMA", c: "Otot penyekat rongga dada dan perut" },
+            { w: "PLEURA", c: "Selaput pembungkus paru-paru" }
         ];
-        let g2State = { index: 0, score: 0 };
+        let g2Idx = 0, g2Score = 0;
         
         function initGame2() {
             document.getElementById('game2Container').classList.remove('hidden');
-            g2State = { index: 0, score: 0 };
-            document.getElementById('gameScoreDisplay').innerText = "0";
-            loadG2Word();
+            g2Idx = 0; g2Score = 0; loadG2();
         }
-
-        function loadG2Word() {
-            if (g2State.index >= g2Words.length) {
-                finishGame2();
-                return;
-            }
-            const data = g2Words[g2State.index];
-            document.getElementById('g2Clue').innerText = `Petunjuk: ${data.clue}`;
+        function loadG2() {
+            if(g2Idx >= g2Data.length) { processGameEnd("Teka Teki Organ", g2Score, true); return; }
+            document.getElementById('g2Lvl').innerText = g2Idx + 1;
+            document.getElementById('g2Clue').innerText = `Petunjuk: ${g2Data[g2Idx].c}`;
             document.getElementById('g2Answer').value = "";
-            // Acak kata
-            let arr = data.word.split('');
+            let arr = g2Data[g2Idx].w.split('');
             arr.sort(() => 0.5 - Math.random());
             document.getElementById('g2Jumbled').innerText = arr.join(' ');
         }
-
         function checkGame2Answer() {
-            const ans = document.getElementById('g2Answer').value.toUpperCase().trim();
-            const correct = g2Words[g2State.index].word;
-            if (ans === correct) {
-                Swal.fire({toast: true, position: 'top-end', icon: 'success', title: 'Tepat Sekali!', showConfirmButton: false, timer: 1000});
-                g2State.score += 25;
-                document.getElementById('gameScoreDisplay').innerText = g2State.score;
-                g2State.index++;
-                setTimeout(loadG2Word, 1000);
+            let ans = document.getElementById('g2Answer').value.toUpperCase().trim();
+            if(ans === g2Data[g2Idx].w) {
+                g2Score += 20; document.getElementById('gameScoreDisplay').innerText = g2Score;
+                Swal.fire({toast:true, position:'top', icon:'success', title:'Tepat!', timer:1000, showConfirmButton:false});
+                g2Idx++; setTimeout(loadG2, 1000);
             } else {
-                Swal.fire({toast: true, position: 'top-end', icon: 'error', title: 'Coba Lagi!', showConfirmButton: false, timer: 1000});
+                Swal.fire({toast:true, position:'top', icon:'error', title:'Coba lagi!', timer:1000, showConfirmButton:false});
             }
         }
 
-        function finishGame2() {
-            appState.stats.stars += 5; // Fixed reward
-            saveIdentity();
-            sendToSheet('NILAI_GAME', { nama_game: "Susun Kata", skor: g2State.score });
-            Swal.fire('Hebat!', `Kamu menyelesaikan game Susun Kata dengan skor ${g2State.score}!`, 'success').then(() => {
-                showView('games-list-view');
+        // --- GAME 3: JALUR OKSIGEN ---
+        const g3CorrectOrder = ["HIDUNG", "FARING", "LARING", "TRAKEA", "BRONKUS", "PARU-PARU"];
+        let g3CurrentArr = [];
+        
+        function initGame3() {
+            document.getElementById('game3Container').classList.remove('hidden');
+            resetGame3();
+        }
+        
+        function resetGame3() {
+            g3CurrentArr = [];
+            renderG3();
+            let pool = [...g3CorrectOrder].sort(()=>0.5-Math.random());
+            let cBox = document.getElementById('g3Choices'); cBox.innerHTML = "";
+            pool.forEach(item => {
+                let btn = document.createElement('button');
+                btn.className = "bg-white border-2 border-cyan-500 text-cyan-700 font-black py-2 px-4 rounded-xl shadow cursor-pointer hover:bg-cyan-50 btn-hover-fx";
+                btn.innerText = item;
+                btn.onclick = () => addG3(item, btn);
+                cBox.appendChild(btn);
             });
         }
 
+        function addG3(item, btnElement) {
+            if(g3CurrentArr.length < g3CorrectOrder.length) {
+                g3CurrentArr.push(item);
+                btnElement.style.visibility = 'hidden';
+                renderG3();
+            }
+        }
 
-        // --- 8. REPORT (HASIL BELAJAR) LOGIC ---
+        function renderG3() {
+            let tBox = document.getElementById('g3TargetSlots'); tBox.innerHTML = "";
+            g3CurrentArr.forEach((item, idx) => {
+                tBox.innerHTML += `<div class="bg-cyan-600 text-white font-black py-2 px-4 rounded-xl shadow border border-cyan-400 flex items-center">${item} ${idx<g3CorrectOrder.length-1 ? '<i class="fas fa-arrow-right ml-3 text-cyan-200"></i>' : ''}</div>`;
+            });
+        }
+
+        function checkGame3Answer() {
+            if(g3CurrentArr.length < g3CorrectOrder.length) { Swal.fire('Oops', 'Lengkapi urutannya dulu!', 'warning'); return; }
+            let isCorrect = g3CurrentArr.every((val, index) => val === g3CorrectOrder[index]);
+            if(isCorrect) {
+                processGameEnd("Jalur Oksigen", 100, true);
+            } else {
+                Swal.fire({icon: 'error', title: 'Belum Tepat', text: 'Urutannya ada yang salah. Coba lagi!'});
+                resetGame3();
+            }
+        }
+
+        // --- GAME END PROCESSOR ---
+        function processGameEnd(gameName, score, isWin) {
+            let xpGained = score;
+            appState.stats.xp += xpGained;
+            appState.stats.gameHistory.push({ game: gameName, skor: score, xp: xpGained });
+            saveState();
+            sendToAPI('NILAI_GAME', { nama_game: gameName, skor: score, xp_gain: xpGained });
+            
+            Swal.fire({
+                title: isWin ? 'Victory!' : 'Selesai!',
+                html: `Game: ${gameName}<br>Skor: <b class="text-2xl text-purple-500">${score}</b><br>XP: <b>+${xpGained}</b>`,
+                icon: isWin ? 'success' : 'info',
+                confirmButtonText: 'Ke Arena'
+            }).then(() => showView('games-list-view'));
+        }
+
+        // ==========================================
+        // 7. HASIL BELAJAR (REPORT)
+        // ==========================================
         function renderReport() {
             document.getElementById('repName').innerText = appState.user.name;
             document.getElementById('repClass').innerText = appState.user.class;
+            document.getElementById('repLevel').innerText = appState.stats.level;
+            document.getElementById('repXP').innerText = appState.stats.xp;
             document.getElementById('repStars').innerText = appState.stats.stars;
             
-            const tbody = document.getElementById('repQuizBody');
-            tbody.innerHTML = "";
-            
-            if (appState.stats.quizHistory.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-500">Belum ada kuis yang dikerjakan.</td></tr>`;
-                return;
-            }
-
-            appState.stats.quizHistory.forEach(r => {
-                let badgeColor = r.skor >= 80 ? 'bg-green-100 text-green-700' : (r.skor >= 60 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700');
-                tbody.innerHTML += `
-                    <tr class="border-b border-gray-50">
-                        <td class="p-3 font-bold text-gray-700">${r.judul}</td>
-                        <td class="p-3 text-sm text-gray-500">${r.tanggal}</td>
-                        <td class="p-3 text-center font-black text-blue-600 text-lg">${r.skor}</td>
-                        <td class="p-3 text-center"><span class="px-2 py-1 rounded text-xs font-bold ${badgeColor}">${r.predikat}</span></td>
-                    </tr>
-                `;
+            let qBody = document.getElementById('repQuizBody'); qBody.innerHTML = "";
+            appState.stats.quizHistory.forEach(q => {
+                let cl = q.skor >= 70 ? 'text-emerald-400' : 'text-rose-400';
+                qBody.innerHTML += `<tr class="border-b border-slate-700 hover:bg-slate-700/50">
+                    <td class="p-4 font-bold text-white">${q.judul}</td><td class="p-4">${q.tgl}</td>
+                    <td class="p-4 text-center font-black ${cl} text-lg">${q.skor}</td>
+                    <td class="p-4 text-center"><span class="bg-black/30 px-3 py-1 rounded text-xs">${q.predikat}</span></td>
+                </tr>`;
             });
-        }
+            if(!appState.stats.quizHistory.length) qBody.innerHTML = `<tr><td colspan="4" class="p-4 text-center italic text-slate-500">Belum ada misi kuis selesai.</td></tr>`;
 
+            let gBody = document.getElementById('repGameBody'); gBody.innerHTML = "";
+            appState.stats.gameHistory.forEach(g => {
+                gBody.innerHTML += `<tr class="border-b border-slate-700 hover:bg-slate-700/50">
+                    <td class="p-4 font-bold text-white">${g.game}</td>
+                    <td class="p-4 text-center font-black text-cyan-400 text-lg">${g.skor}</td>
+                    <td class="p-4 text-center text-purple-400 font-bold">+${g.xp} XP</td>
+                </tr>`;
+            });
+            if(!appState.stats.gameHistory.length) gBody.innerHTML = `<tr><td colspan="3" class="p-4 text-center italic text-slate-500">Belum bermain di Arena.</td></tr>`;
+        }
     </script>
 </body>
 </html>
